@@ -9,9 +9,13 @@ interface UploadState {
 
 const MAX_SIZE_MB = 5;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
-const BUCKET_NAME = 'products';
 
-export const useProductImage = (userId?: string) => {
+/**
+ * Hook para subir imágenes a cualquier bucket de Supabase
+ * @param bucketName Nombre del bucket (products, stores, profiles, etc.)
+ * @param userId ID del usuario para organizar por carpetas (opcional)
+ */
+export const useImageUpload = (bucketName: string, userId?: string) => {
     const [state, setState] = useState<UploadState>({
         uploading: false,
         progress: 0,
@@ -47,7 +51,7 @@ export const useProductImage = (userId?: string) => {
             setState(s => ({ ...s, progress: 30 }));
 
             const { error: uploadError } = await supabase.storage
-                .from(BUCKET_NAME)
+                .from(bucketName)
                 .upload(filePath, file, {
                     cacheControl: '3600',
                     upsert: false,
@@ -59,7 +63,7 @@ export const useProductImage = (userId?: string) => {
             setState(s => ({ ...s, progress: 80 }));
 
             const { data: { publicUrl } } = supabase.storage
-                .from(BUCKET_NAME)
+                .from(bucketName)
                 .getPublicUrl(filePath);
 
             setState({ uploading: false, progress: 100, error: null });
@@ -70,7 +74,7 @@ export const useProductImage = (userId?: string) => {
             return publicUrl;
         } catch (err: any) {
             const msg = err?.message?.includes('Bucket not found')
-                ? 'El bucket "products" no existe aún. Ve a Supabase Storage y créalo.'
+                ? `El bucket "${bucketName}" no existe. Créalo en Supabase Storage.`
                 : err?.message || 'Error desconocido al subir la imagen.';
 
             setState({ uploading: false, progress: 0, error: msg });

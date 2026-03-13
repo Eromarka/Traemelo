@@ -2,14 +2,32 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
+import { useImageUpload } from '../hooks/useImageUpload';
+import { supabase } from '../lib/supabaseClient';
 
 export const Profile = () => {
     const navigate = useNavigate();
-    const { profile, signOut } = useAuth();
+    const { profile, user, signOut, refreshProfile } = useAuth();
+    const { uploadImage, uploading } = useImageUpload('profiles', user?.id);
 
     const handleSignOut = async () => {
         await signOut();
         navigate('/login');
+    };
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !user) return;
+        
+        const url = await uploadImage(file);
+        if (url) {
+            await supabase
+                .from('profiles')
+                .update({ avatar_url: url })
+                .eq('id', user.id);
+            
+            await refreshProfile();
+        }
     };
 
     const initials = profile?.full_name?.split(' ').map((n: any) => n[0]).join('').toUpperCase() || 'U';
@@ -37,15 +55,19 @@ export const Profile = () => {
                 >
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
                     
-                    <div className="relative">
-                        <div className="size-24 rounded-[2rem] bg-gradient-to-br from-primary to-primary/40 flex items-center justify-center text-black font-black text-3xl shadow-2xl shadow-primary/30 ring-4 ring-white/5">
-                            {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover rounded-[2rem]" />
+                    <div className="relative group">
+                        <div className="size-24 rounded-[2rem] bg-gradient-to-br from-primary to-primary/40 flex items-center justify-center text-black font-black text-3xl shadow-2xl shadow-primary/30 ring-4 ring-white/5 overflow-hidden">
+                            {uploading ? (
+                                <div className="size-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+                            ) : profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                             ) : initials}
                         </div>
-                        <div className="absolute -bottom-2 -right-2 size-8 rounded-xl bg-emerald-500 border-4 border-[#070707] flex items-center justify-center">
-                            <span className="material-symbols-outlined text-black text-sm font-black">verified</span>
-                        </div>
+                        
+                        <label className="absolute -bottom-2 -right-2 size-10 rounded-2xl bg-white text-black shadow-xl flex items-center justify-center cursor-pointer active:scale-90 transition-all border-4 border-[#070707]">
+                            <span className="material-symbols-outlined text-lg">add_a_photo</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                        </label>
                     </div>
 
                     <div>

@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { useCategories } from '../hooks/useCategories';
-import { useProductImage } from '../hooks/useProductImage';
+import { useImageUpload } from '../hooks/useImageUpload';
 
 export const AddProduct = () => {
     const navigate = useNavigate();
@@ -13,7 +13,7 @@ export const AddProduct = () => {
     const { categories } = useCategories();
     const [loading, setLoading] = useState(false);
     const [storeId, setStoreId] = useState<string | null>(null);
-    const { uploadImage, uploading, progress, error: uploadError, clearError } = useProductImage(user?.id);
+    const { uploadImage, uploading, progress, error: uploadError, clearError } = useImageUpload('products', user?.id);
 
     const [product, setProduct] = useState({
         name: '',

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { localCategories } from '../data/localData';
 import { useAuth } from '../contexts/AuthContext';
+import { useImageUpload } from '../hooks/useImageUpload';
 
 interface FormData {
     business_name: string;
@@ -16,6 +17,7 @@ interface FormData {
     opening_time: string;
     closing_time: string;
     logo_url: string;
+    image_url: string; // Nueva foto de portada
     email: string;
     password: string;
 }
@@ -31,6 +33,7 @@ const INITIAL_FORM: FormData = {
     opening_time: '08:00',
     closing_time: '18:00',
     logo_url: '',
+    image_url: '',
     email: '',
     password: '',
 };
@@ -45,6 +48,8 @@ export const RegisterBusiness = () => {
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState('');
     const { refreshProfile } = useAuth();
+    const { uploadImage: uploadStoreLogo, uploading: uploadingLogo } = useImageUpload('stores');
+    const { uploadImage: uploadStoreImage, uploading: uploadingImage } = useImageUpload('stores');
 
     const update = (field: keyof FormData, value: string) => {
         setForm(prev => ({ ...prev, [field]: value }));
@@ -138,6 +143,8 @@ export const RegisterBusiness = () => {
                     description: form.description,
                     address: form.address,
                     opening_hours: `${form.opening_time} - ${form.closing_time}`,
+                    logo_url: form.logo_url,
+                    image_url: form.image_url,
                     status: 'pending',
                     is_active: true,
                     trial_ends_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
@@ -479,9 +486,94 @@ export const RegisterBusiness = () => {
                             exit={{ opacity: 0, x: -40 }}
                             className="flex flex-col gap-6"
                         >
-                            <div>
+                             <div>
                                 <h2 className="text-white text-2xl font-black mb-1">Confirmar</h2>
-                                <p className="text-white/40 text-sm">Revisa los datos antes de enviar</p>
+                                <p className="text-white/40 text-sm">Añade tus fotos y revisa los datos</p>
+                            </div>
+
+                            {/* Fotos del Negocio */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] uppercase font-black text-white/40 ml-2">Logo</label>
+                                    <div className="relative aspect-square rounded-2xl overflow-hidden glass-card border border-white/10 flex flex-col items-center justify-center gap-2 group">
+                                        {form.logo_url ? (
+                                            <>
+                                                <img src={form.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <label className="cursor-pointer p-2 rounded-full bg-primary/20 backdrop-blur-md border border-primary/40">
+                                                        <span className="material-symbols-outlined text-primary text-sm">edit</span>
+                                                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                const url = await uploadStoreLogo(file);
+                                                                if (url) update('logo_url', url);
+                                                            }
+                                                        }} />
+                                                    </label>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <label className="cursor-pointer flex flex-col items-center gap-1 group">
+                                                <div className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/40 transition-all">
+                                                    {uploadingLogo ? (
+                                                        <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                                    ) : (
+                                                        <span className="material-symbols-outlined text-white/40 group-hover:text-primary">add_a_photo</span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[8px] font-black uppercase text-white/30">Subir Logo</span>
+                                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const url = await uploadStoreLogo(file);
+                                                        if (url) update('logo_url', url);
+                                                    }
+                                                }} />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[9px] uppercase font-black text-white/40 ml-2">Foto de Portada</label>
+                                    <div className="relative aspect-square rounded-2xl overflow-hidden glass-card border border-white/10 flex flex-col items-center justify-center gap-2 group">
+                                        {form.image_url ? (
+                                            <>
+                                                <img src={form.image_url} alt="Portada" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <label className="cursor-pointer p-2 rounded-full bg-primary/20 backdrop-blur-md border border-primary/40">
+                                                        <span className="material-symbols-outlined text-primary text-sm">edit</span>
+                                                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                const url = await uploadStoreImage(file);
+                                                                if (url) update('image_url', url);
+                                                            }
+                                                        }} />
+                                                    </label>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <label className="cursor-pointer flex flex-col items-center gap-1 group">
+                                                <div className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/40 transition-all">
+                                                    {uploadingImage ? (
+                                                        <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                                    ) : (
+                                                        <span className="material-symbols-outlined text-white/40 group-hover:text-primary">add_photo_alternate</span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[8px] font-black uppercase text-white/30">Subir Portada</span>
+                                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const url = await uploadStoreImage(file);
+                                                        if (url) update('image_url', url);
+                                                    }
+                                                }} />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Card resumen */}
