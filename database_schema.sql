@@ -55,6 +55,7 @@ CREATE TABLE products (
     image_url TEXT,
     is_promo BOOLEAN DEFAULT false,
     rating DECIMAL(2,1) DEFAULT 5.0,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'suspended')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
