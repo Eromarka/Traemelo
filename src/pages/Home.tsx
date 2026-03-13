@@ -8,10 +8,13 @@ import { useCategories } from '../hooks/useCategories';
 import { localCategories } from '../data/localData';
 import { useAuth } from '../contexts/AuthContext';
 
+import { useStores } from '../hooks/useStores';
+
 export const Home = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(0);
     const { products } = useProducts();
+    const { stores } = useStores();
     const { categories } = useCategories();
     const { profile } = useAuth();
     const avatarUrl = profile?.avatar_url || '';
@@ -201,6 +204,15 @@ export const Home = () => {
                     <h3 className="text-white font-black text-lg tracking-tighter text-crisp">Categorías</h3>
                 </div>
                 <div className="flex overflow-x-auto gap-3 px-4 no-scrollbar pb-2">
+                    <button
+                        onClick={() => navigate('/directory')}
+                        className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl glass-card border border-white/30 shadow-lg active:scale-95 transition-all flex-none bg-primary/20 backdrop-blur-2xl group min-w-[110px]"
+                    >
+                        <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">
+                            grid_view
+                        </span>
+                        <span className="text-sm font-bold text-white tracking-tight whitespace-nowrap">Todos</span>
+                    </button>
                     {displayCategories.map((cat) => (
                         <button
                             key={cat.id || cat.name}
@@ -215,6 +227,32 @@ export const Home = () => {
                     ))}
                 </div>
             </div>
+
+            {/* Featured Stores */}
+            {stores.length > 0 && (
+                <div className="mt-8">
+                    <div className="px-4 flex items-center justify-between mb-4">
+                        <h3 className="text-white font-black text-lg tracking-tighter text-crisp uppercase">Negocios Destacados</h3>
+                        <button onClick={() => navigate('/directory')} className="text-primary text-[10px] font-black uppercase tracking-widest">Ver todos</button>
+                    </div>
+                    <div className="flex overflow-x-auto gap-4 px-4 no-scrollbar pb-4">
+                        {stores.map((store) => (
+                            <div 
+                                key={store.id} 
+                                onClick={() => navigate(`/directory?store=${store.id}`)}
+                                className="flex-none w-40 group cursor-pointer active:scale-95 transition-all"
+                            >
+                                <div className="size-40 rounded-[2.5rem] overflow-hidden mb-3 border border-white/10 shadow-lg relative bg-white/5">
+                                    <img src={store.image_url} alt={store.business_name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+                                </div>
+                                <h4 className="text-white font-black text-sm tracking-tight px-1 truncate">{store.business_name}</h4>
+                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest px-1 mt-0.5 truncate">{store.address}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Suggestions */}
             <motion.div 

@@ -19,6 +19,7 @@ export const BusinessDashboard = () => {
         { id: '2', customer: 'Maria García', status: 'en camino', total: 320, time: 'Hace 15 min' },
     ]);
     const [storeStatus, setStoreStatus] = useState<string>('active');
+    const [products, setProducts] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchStoreData = async () => {
@@ -33,7 +34,17 @@ export const BusinessDashboard = () => {
 
             if (storeData) {
                 setStoreStatus(storeData.status);
-                // Fetch orders for this store (using the first store for demo)
+                
+                // Fetch products for this store
+                const { data: productsData } = await supabase
+                    .from('products')
+                    .select('*')
+                    .eq('store_id', storeData.id)
+                    .order('created_at', { ascending: false });
+                
+                if (productsData) setProducts(productsData);
+
+                // Fetch orders for this store
                 const { data: orders } = await supabase
                     .from('orders')
                     .select('*')
@@ -53,6 +64,13 @@ export const BusinessDashboard = () => {
 
         fetchStoreData();
     }, [user]);
+
+    const deleteProduct = async (id: string) => {
+        if (!confirm('¿Estás seguro de eliminar este producto?')) return;
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) alert('Error al eliminar');
+        else setProducts(products.filter(p => p.id !== id));
+    };
 
     return (
         <div className="relative min-h-screen flex flex-col aurora-bg pb-24 text-white overflow-hidden">
@@ -110,23 +128,58 @@ export const BusinessDashboard = () => {
                 {/* Main Action Banner */}
                 <motion.div 
                     whileTap={storeStatus === 'pending' ? {} : { scale: 0.98 }}
-                    onClick={() => storeStatus !== 'pending' && navigate('/add-product')}
+                    onClick={() => storeStatus !== 'pending' && navigate('/business/add-product')}
                     className={`relative overflow-hidden p-6 rounded-[2rem] border shadow-2xl transition-all ${
                         storeStatus === 'pending' 
                         ? 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed' 
-                        : 'bg-gradient-to-br from-primary via-primary/80 to-primary/40 border-primary/20 shadow-primary/20 cursor-pointer'
+                        : 'bg-gradient-to-br from-primary via-primary/80 to-primary/40 border-primary/20 shadow-primary/20 cursor-pointer text-black'
                     }`}
                 >
                     <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <span className="material-symbols-outlined text-8xl text-black">add_shopping_cart</span>
+                        <span className="material-symbols-outlined text-8xl">add_shopping_cart</span>
                     </div>
-                    <div className="relative z-10">
-                        <h3 className={`${storeStatus === 'pending' ? 'text-white/60' : 'text-black'} font-black text-2xl tracking-tighter leading-none mb-2`}>Añadir Producto</h3>
-                        <p className={`${storeStatus === 'pending' ? 'text-white/40' : 'text-black/60'} text-xs font-bold uppercase tracking-wider`}>
+                    <div className="relative z-10 text-black">
+                        <h3 className="font-black text-2xl tracking-tighter leading-none mb-2">Añadir Producto</h3>
+                        <p className="text-[10px] font-black uppercase tracking-wider opacity-70">
                             {storeStatus === 'pending' ? 'Disponible tras aprobación' : 'Crea una oferta nueva para hoy'}
                         </p>
                     </div>
                 </motion.div>
+
+                {/* Products List */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <h2 className="text-xs font-black uppercase text-white/40 tracking-[0.2em]">Tu Inventario ({products.length})</h2>
+                    </div>
+                    {products.length === 0 ? (
+                        <div className="p-10 border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center gap-3 text-center opacity-40">
+                             <span className="material-symbols-outlined text-4xl">inventory</span>
+                             <p className="text-sm font-medium">No has añadido productos aún</p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4">
+                            {products.map((prod) => (
+                                <div key={prod.id} className="glass-card rounded-[2rem] p-4 flex items-center justify-between border border-white/5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="size-16 rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+                                            <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-sm tracking-tight">{prod.name}</h4>
+                                            <p className="text-primary font-black text-lg">${prod.price}</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => deleteProduct(prod.id)}
+                                        className="size-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500/20 transition-all"
+                                    >
+                                        <span className="material-symbols-outlined">delete</span>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 {/* Recent Orders List */}
                 <div className="space-y-4">

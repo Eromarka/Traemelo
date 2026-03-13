@@ -22,6 +22,7 @@ const RegisterBusiness = lazy(() => import('./pages/RegisterBusiness').then(m =>
 const Tracking = lazy(() => import('./pages/Tracking').then(m => ({ default: m.Tracking })));
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then(m => ({ default: m.BusinessDashboard })));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AddProduct = lazy(() => import('./pages/AddProduct').then(m => ({ default: m.AddProduct })));
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { MerchantRoute } from './components/auth/MerchantRoute';
 import { AdminRoute } from './components/auth/AdminRoute';
@@ -79,6 +80,7 @@ function AnimatedRoutes() {
           <Route path="/register-business" element={<PageWrapper><RegisterBusiness /></PageWrapper>} />
           <Route path="/tracking/:orderId" element={<ProtectedRoute><PageWrapper><Tracking /></PageWrapper></ProtectedRoute>} />
           <Route path="/business/dashboard" element={<MerchantRoute><PageWrapper><BusinessDashboard /></PageWrapper></MerchantRoute>} />
+          <Route path="/business/add-product" element={<MerchantRoute><PageWrapper><AddProduct /></PageWrapper></MerchantRoute>} />
           <Route path="/admin/dashboard" element={<AdminRoute><PageWrapper><AdminDashboard /></PageWrapper></AdminRoute>} />
           <Route path="*" element={<PageWrapper><Home /></PageWrapper>} />
         </Routes>
