@@ -25,7 +25,7 @@ export const AddProduct = () => {
     useEffect(() => {
         const fetchUserStore = async () => {
             if (!user) return;
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('stores')
                 .select('id')
                 .eq('user_id', user.id)
