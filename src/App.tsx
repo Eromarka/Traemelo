@@ -68,6 +68,7 @@ function AnimatedRoutes() {
           } />
 
           <Route path="/cart" element={<ProtectedRoute><PageWrapper><Cart /></PageWrapper></ProtectedRoute>} />
+          <Route path="/product/:id" element={<PageWrapper><ProductDetails /></PageWrapper>} />
           <Route path="/product" element={<PageWrapper><ProductDetails /></PageWrapper>} />
           <Route path="/directory" element={<PageWrapper><BusinessDirectory /></PageWrapper>} />
           <Route path="/notifications" element={<ProtectedRoute><PageWrapper><Notifications /></PageWrapper></ProtectedRoute>} />

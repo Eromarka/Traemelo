@@ -267,10 +267,9 @@ export const Home = () => {
                 </div>
                 <div className="flex overflow-x-auto gap-4 px-4 no-scrollbar pb-3">
                     {(products.length > 0 ? products.map(p => ({
-                        id: p.id, name: p.name, store_name: p.store_name, image: p.image_url,
-                        path: '/product'
-                    })) : fallbackSuggestions).map((item) => (
-                        <div key={item.id} className="flex-none w-52 group cursor-pointer active:scale-[0.98] transition-transform" onClick={() => navigate(item.path)}>
+                        id: p.id, name: p.name, store_name: p.store_name, image: p.image_url
+                    })) : fallbackSuggestions.map(s => ({ ...s, id: s.id }))).map((item) => (
+                        <div key={item.id} className="flex-none w-52 group cursor-pointer active:scale-[0.98] transition-transform" onClick={() => navigate(`/product/${item.id}`)}>
                             <div className="relative h-32 rounded-xl overflow-hidden mb-2 ring-1 ring-white/10 shadow-lg bg-black/40">
                                 <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url("${item.image}")` }}></div>
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none"></div>
@@ -296,7 +295,7 @@ export const Home = () => {
                 </div>
                 <div className="flex overflow-x-auto gap-4 px-4 no-scrollbar pb-3">
                     {(discountProducts.length > 0 ? discountProducts : products.slice(0, 4)).map((p) => (
-                        <div key={p.id + '-discount'} className="flex-none w-44 group cursor-pointer active:scale-[0.98] transition-transform" onClick={() => navigate('/product')}>
+                        <div key={p.id + '-discount'} className="flex-none w-44 group cursor-pointer active:scale-[0.98] transition-transform" onClick={() => navigate(`/product/${p.id}`)}>
                             <div className="relative h-44 rounded-2xl overflow-hidden mb-2 ring-1 ring-white/10 shadow-lg">
                                 <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url("${p.image_url}")` }}></div>
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
@@ -329,7 +328,7 @@ export const Home = () => {
                 <div className="px-4 pb-4">
                     {promoProducts.length > 0 ? (
                         promoProducts.map(promo => (
-                            <div key={promo.id} className="relative w-full h-32 rounded-2xl overflow-hidden group cursor-pointer active:scale-[0.99] transition-all border border-white/10 shadow-xl mb-4" onClick={() => navigate('/product')}>
+                            <div key={promo.id} className="relative w-full h-32 rounded-2xl overflow-hidden group cursor-pointer active:scale-[0.99] transition-all border border-white/10 shadow-xl mb-4" onClick={() => navigate(`/product/${promo.id}`)}>
                                 <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style={{ backgroundImage: `url("${promo.image_url}")` }}></div>
                                 <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/10 to-transparent"></div>
                                 <div className="absolute inset-y-0 left-0 p-5 flex flex-col justify-center gap-1">
@@ -367,7 +366,7 @@ export const Home = () => {
                     </div>
                     <div className="flex overflow-x-auto gap-4 px-4 no-scrollbar pb-3">
                         {healthProducts.map((p) => (
-                            <div key={p.id} className="flex-none w-52 group cursor-pointer active:scale-[0.98] transition-transform" onClick={() => navigate('/product')}>
+                            <div key={p.id} className="flex-none w-52 group cursor-pointer active:scale-[0.98] transition-transform" onClick={() => navigate(`/product/${p.id}`)}>
                                 <div className="relative h-32 rounded-xl overflow-hidden mb-2 ring-1 ring-white/10 shadow-lg border border-green-500/20">
                                     <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url("${p.image_url}")` }}></div>
                                     <div className="absolute top-2 right-2 flex items-center justify-center p-1.5 rounded-lg bg-green-500/80 backdrop-blur-md">
