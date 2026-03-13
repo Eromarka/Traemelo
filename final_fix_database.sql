@@ -61,7 +61,54 @@ INSERT INTO categories (id, name, icon, "order") VALUES
 ('5', 'Frutas', 'eco', 5),
 ('6', 'Construcción', 'construction', 6),
 ('7', 'Repuestos', 'settings_input_component', 7),
-('8', 'Agro', 'agriculture', 8);
+('8', 'Agro', 'agriculture', 8)
+ON CONFLICT (id) DO NOTHING;
+
+-- 6. Productos (category_id a TEXT)
+CREATE TABLE products (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    store_id UUID REFERENCES stores(id) ON DELETE CASCADE,
+    category_id TEXT REFERENCES categories(id),
+    name TEXT NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    image_url TEXT,
+    is_promo BOOLEAN DEFAULT false,
+    rating DECIMAL(2,1) DEFAULT 5.0,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'suspended')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 7. Pedidos
+CREATE TABLE orders (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id),
+    store_id UUID REFERENCES stores(id),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'preparing', 'delivering', 'completed', 'cancelled')),
+    total_price DECIMAL(10,2) NOT NULL,
+    items JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 8. Notificaciones
+CREATE TABLE notifications (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT DEFAULT 'info',
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 9. Analytics / Leads
+CREATE TABLE leads (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    store_name TEXT NOT NULL,
+    action_type TEXT NOT NULL,
+    user_id UUID REFERENCES profiles(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
 -- 6. El TRIGGER "MÁGICO": Crea el perfil solo apenas alguien se registre en Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
