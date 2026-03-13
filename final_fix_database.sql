@@ -48,6 +48,7 @@ CREATE TABLE stores (
     opening_hours TEXT,
     status TEXT DEFAULT 'active',
     is_active BOOLEAN DEFAULT true,
+    trial_ends_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     UNIQUE(user_id) -- Un dueño, una tienda
 );

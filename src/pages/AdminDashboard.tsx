@@ -89,7 +89,7 @@ export const AdminDashboard = () => {
 
         const { error } = await supabase
             .from('stores')
-            .update({ status: 'active', approved_at: new Date().toISOString() })
+            .update({ status: 'active' })
             .eq('id', storeId);
 
         if (!error) {
