@@ -15,7 +15,7 @@ export const useProducts = () => {
                     .from('products')
                     .select('*, stores!inner(status)')
                     .eq('stores.status', 'active')
-                    .eq('status', 'approved')
+                    .eq('status', 'active')
                     .order('created_at', { ascending: false });
 
                 if (error || !data || data.length === 0) {

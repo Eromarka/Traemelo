@@ -23,9 +23,20 @@ export const Home = () => {
 
     const displayCategories = categories.length > 0 ? categories : localCategories;
 
+    // 1. Ofertas (Slider/Cards): Productos marcados por el vendedor como is_promo
     const promoProducts = products.filter(p => p.is_promo);
-    const healthProducts = products.filter(p => p.category_id === '5' || p.name.toLowerCase().includes('ensalada'));
-    const discountProducts = products.filter(p => p.price < 5);
+    
+    // 2. Opciones Saludables: Pertenecen a Frutas (5) o tienen keywords sanas
+    const healthProducts = products.filter(p => 
+        p.category_id === '5' || 
+        ['ensa', 'salud', 'fit', 'sano', 'vegan'].some(term => p.name.toLowerCase().includes(term))
+    );
+
+    // 3. Negocios Destacados: Stores con calificación alta
+    const featuredStores = stores.filter(s => (s.rating || 5) >= 4.5);
+
+    // 4. Top Pedidos: Por ahora simulado con los de mayor calificación (hasta cruzar con order data)
+    const topPedidos = [...products].sort((a, b) => (b.rating || 5) - (a.rating || 5)).slice(0, 4);
 
     const fallbackSuggestions = [
         { id: 's1', name: 'Hamburguesa Triple', store_name: 'San Juan Burger', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&auto=format&fit=crop', path: '/product' },
@@ -229,24 +240,28 @@ export const Home = () => {
             </div>
 
             {/* Featured Stores */}
-            {stores.length > 0 && (
+            {featuredStores.length > 0 && (
                 <div className="mt-8">
                     <div className="px-4 flex items-center justify-between mb-4">
                         <h3 className="text-white font-black text-lg tracking-tighter text-crisp uppercase">Negocios Destacados</h3>
                         <button onClick={() => navigate('/directory')} className="text-primary text-[10px] font-black uppercase tracking-widest">Ver todos</button>
                     </div>
                     <div className="flex overflow-x-auto gap-4 px-4 no-scrollbar pb-4">
-                        {stores.map((store) => (
+                        {featuredStores.map((store) => (
                             <div 
                                 key={store.id} 
                                 onClick={() => navigate(`/directory?store=${store.id}`)}
                                 className="flex-none w-40 group cursor-pointer active:scale-95 transition-all"
                             >
                                 <div className="size-40 rounded-[2.5rem] overflow-hidden mb-3 border border-white/10 shadow-lg relative bg-white/5">
-                                    <img src={store.image_url} alt={store.business_name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                    <img src={store.image_url} alt={store.business_name || store.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+                                    <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[10px] text-yellow-400" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                                        <span className="text-white text-[10px] font-bold">{store.rating || '5.0'}</span>
+                                    </div>
                                 </div>
-                                <h4 className="text-white font-black text-sm tracking-tight px-1 truncate">{store.business_name}</h4>
+                                <h4 className="text-white font-black text-sm tracking-tight px-1 truncate">{store.business_name || store.name}</h4>
                                 <p className="text-white/40 text-[9px] font-black uppercase tracking-widest px-1 mt-0.5 truncate">{store.address}</p>
                             </div>
                         ))}
@@ -282,7 +297,8 @@ export const Home = () => {
                 </div>
             </motion.div>
 
-            {/* Discounts */}
+            {/* Discounts / Ofertas Activas */}
+            {promoProducts.length > 0 && (
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -294,7 +310,7 @@ export const Home = () => {
                     <h3 className="text-white font-black text-lg tracking-tighter text-crisp">OFERTA ACTIVA</h3>
                 </div>
                 <div className="flex overflow-x-auto gap-4 px-4 no-scrollbar pb-3">
-                    {(discountProducts.length > 0 ? discountProducts : products.slice(0, 4)).map((p) => (
+                    {promoProducts.map((p) => (
                         <div key={p.id + '-discount'} className="flex-none w-44 group cursor-pointer active:scale-[0.98] transition-transform" onClick={() => navigate(`/product/${p.id}`)}>
                             <div className="relative h-44 rounded-2xl overflow-hidden mb-2 ring-1 ring-white/10 shadow-lg">
                                 <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url("${p.image_url}")` }}></div>
@@ -312,8 +328,9 @@ export const Home = () => {
                     ))}
                 </div>
             </motion.div>
+            )}
 
-            {/* Most Requested */}
+            {/* Most Requested / Top Pedidos */}
             <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
@@ -323,37 +340,24 @@ export const Home = () => {
             >
                 <div className="px-4 flex items-center justify-between mb-3">
                     <h3 className="text-white font-black text-lg tracking-tighter text-crisp uppercase">Top Pedidos</h3>
-                    <button onClick={() => navigate('/restaurants')} className="text-primary text-xs font-black uppercase tracking-widest active:opacity-70">Ver todos</button>
+                    <button onClick={() => navigate('/directory')} className="text-primary text-xs font-black uppercase tracking-widest active:opacity-70">Ver todos</button>
                 </div>
                 <div className="px-4 pb-4">
-                    {promoProducts.length > 0 ? (
-                        promoProducts.map(promo => (
-                            <div key={promo.id} className="relative w-full h-32 rounded-2xl overflow-hidden group cursor-pointer active:scale-[0.99] transition-all border border-white/10 shadow-xl mb-4" onClick={() => navigate(`/product/${promo.id}`)}>
-                                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style={{ backgroundImage: `url("${promo.image_url}")` }}></div>
+                    {topPedidos.length > 0 ? (
+                        topPedidos.map(product => (
+                            <div key={product.id} className="relative w-full h-32 rounded-2xl overflow-hidden group cursor-pointer active:scale-[0.99] transition-all border border-white/10 shadow-xl mb-4" onClick={() => navigate(`/product/${product.id}`)}>
+                                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style={{ backgroundImage: `url("${product.image_url}")` }}></div>
                                 <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/10 to-transparent"></div>
                                 <div className="absolute inset-y-0 left-0 p-5 flex flex-col justify-center gap-1">
-                                    <Badge variant="primary" className="text-[10px] px-2 py-0.5">Oferta Especial</Badge>
-                                    <h4 className="text-white font-black text-xl text-crisp leading-tight tracking-tight drop-shadow-lg">{promo.name}</h4>
-                                    <p className="text-white/70 text-[11px] font-black uppercase tracking-widest">{promo.store_name || 'Negocio Local'}</p>
-                                    <p className="text-primary font-black text-base uppercase tracking-wider drop-shadow-md">${promo.price}</p>
+                                    {product.is_promo && <Badge variant="primary" className="text-[10px] px-2 py-0.5">Oferta</Badge>}
+                                    <h4 className="text-white font-black text-xl text-crisp leading-tight tracking-tight drop-shadow-lg">{product.name}</h4>
+                                    <p className="text-white/70 text-[11px] font-black uppercase tracking-widest">{product.store_name || 'Negocio Local'}</p>
+                                    <p className="text-primary font-black text-base uppercase tracking-wider drop-shadow-md">${product.price}</p>
                                 </div>
                             </div>
                         ))
                     ) : (
-                        <div className="relative w-full h-32 rounded-2xl overflow-hidden group cursor-pointer active:scale-[0.99] transition-all border border-white/10 shadow-xl" onClick={() => navigate('/product')}>
-                            <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop")' }}></div>
-                            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/10 to-transparent"></div>
-                            <div className="absolute inset-y-0 left-0 p-5 flex flex-col justify-center gap-1">
-                                <Badge variant="primary">2x1 Hoy</Badge>
-                                <h4 className="text-white font-black text-lg text-crisp leading-tight tracking-tight drop-shadow-lg">Ensalada Mediana</h4>
-                                <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">San Juan Burger</p>
-                            </div>
-                            <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                                <div className="size-11 rounded-full bg-primary flex items-center justify-center shadow-[0_0_20px_rgba(255,167,38,0.5)] rotate-[-15deg] border border-white/20">
-                                    <span className="material-symbols-outlined text-black text-2xl font-black">local_offer</span>
-                                </div>
-                            </div>
-                        </div>
+                        <div className="text-white/40 text-center py-6 text-sm font-bold">Cargando los favoritos de la ciudad...</div>
                     )}
                 </div>
             </motion.div>

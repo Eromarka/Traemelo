@@ -4,11 +4,14 @@ import { supabase } from '../lib/supabaseClient';
 export interface Store {
     id: string;
     business_name: string;
+    name?: string; // Por retrocompatibilidad
     image_url: string;
     address: string;
     description: string;
     status: string;
     category_id: string;
+    rating: number;
+    is_active: boolean;
 }
 
 export const useStores = (categoryId?: string) => {
