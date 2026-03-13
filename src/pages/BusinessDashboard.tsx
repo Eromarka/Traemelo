@@ -160,6 +160,23 @@ export const BusinessDashboard = () => {
 
     const isPending = storeData?.status === 'pending';
 
+    if (!loadingData && !storeData) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center aurora-bg pb-24 text-white px-6 text-center">
+                <span className="material-symbols-outlined text-7xl text-white/20 mb-4">store_off</span>
+                <h2 className="text-2xl font-black mb-2">Tienda no encontrada</h2>
+                <p className="text-white/60 text-sm mb-8 max-w-xs">Parece que eres comerciante pero no completaste el registro de tu local o hubo un error.</p>
+                <button onClick={() => navigate('/register-business')} className="bg-primary text-black px-8 py-4 rounded-2xl font-black shadow-xl shadow-primary/20 flex items-center gap-2">
+                    <span className="material-symbols-outlined">storefront</span>
+                    Completar Registro
+                </button>
+                <button onClick={() => navigate('/profile')} className="mt-6 text-white/40 font-bold text-sm hover:text-white transition-colors">
+                    Volver al Perfil
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="relative min-h-screen flex flex-col aurora-bg pb-24 text-white overflow-hidden">
 
