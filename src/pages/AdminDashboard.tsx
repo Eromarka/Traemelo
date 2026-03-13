@@ -83,23 +83,65 @@ export const AdminDashboard = () => {
 
     const handleApproveStore = async (storeId: string) => {
         setActionLoading(storeId);
+        
+        // Fetch store details to get the generic user_id
+        const { data: storeDetails } = await supabase.from('stores').select('name, user_id').eq('id', storeId).single();
+
         const { error } = await supabase
             .from('stores')
             .update({ status: 'active', approved_at: new Date().toISOString() })
             .eq('id', storeId);
 
-        if (!error) setStores(prev => prev.filter(s => s.id !== storeId));
+        if (!error) {
+            setStores(prev => prev.filter(s => s.id !== storeId));
+
+            // Crear notificación In-App
+            if (storeDetails?.user_id) {
+                await supabase.from('notifications').insert({
+                    user_id: storeDetails.user_id,
+                    title: '🎉 ¡Tienda Activa!',
+                    message: `Felicidades, tu tienda "${storeDetails.name}" ha sido aprobada. Ahora está visible para todos.`,
+                    type: 'success'
+                });
+
+                // Simular envío de correo solicitando abrir cliente de email (Al no tener backend)
+                if (window.confirm('Tienda Aprobada in-app 🎉.\n¿Deseas enviar un correo al comerciante avisándole?')) {
+                    // Idealmente se pediría el email uniendo stores -> profiles, pero no guardamos email en profile por defecto.
+                    window.open(`mailto:?subject=Tu%20tienda%20ha%20sido%20aprobada&body=Hola,%20tu%20tienda%20"${encodeURIComponent(storeDetails.name)}"%20en%20Traemelo%20ha%20sido%20aprobada.%20%C2%A1Ya%20puedes%20vender!`);
+                }
+            }
+        }
         setActionLoading(null);
     };
 
     const handleApproveProduct = async (productId: string) => {
         setActionLoading(productId);
+        
+        // Obtener detalles para notificar
+        const { data: prodData } = await supabase
+            .from('products')
+            .select('name, stores(user_id, name)')
+            .eq('id', productId)
+            .single();
+
         const { error } = await supabase
             .from('products')
             .update({ status: 'approved' })
             .eq('id', productId);
 
-        if (!error) setProducts(prev => prev.filter(p => p.id !== productId));
+        if (!error) {
+            setProducts(prev => prev.filter(p => p.id !== productId));
+
+            // Notificación al dueño
+            if (prodData?.stores?.user_id) {
+                await supabase.from('notifications').insert({
+                    user_id: prodData.stores.user_id,
+                    title: '✅ Producto Aprobado',
+                    message: `Tu producto "${prodData.name}" ya está visible al público.`,
+                    type: 'success'
+                });
+            }
+        }
         setActionLoading(null);
     };
 

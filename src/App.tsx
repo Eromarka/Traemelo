@@ -23,6 +23,8 @@ const Tracking = lazy(() => import('./pages/Tracking').then(m => ({ default: m.T
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then(m => ({ default: m.BusinessDashboard })));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const AddProduct = lazy(() => import('./pages/AddProduct').then(m => ({ default: m.AddProduct })));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
+const ResetPassword = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { MerchantRoute } from './components/auth/MerchantRoute';
 import { AdminRoute } from './components/auth/AdminRoute';
@@ -58,6 +60,8 @@ function AnimatedRoutes() {
           <Route path="/home" element={<ProtectedRoute><PageWrapper><Home /></PageWrapper></ProtectedRoute>} />
           <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
           <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
+          <Route path="/forgot-password" element={<PageWrapper><ForgotPassword /></PageWrapper>} />
+          <Route path="/reset-password" element={<PageWrapper><ResetPassword /></PageWrapper>} />
 
           <Route path="/profile" element={
             <ProtectedRoute>
