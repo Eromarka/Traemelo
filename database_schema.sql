@@ -62,6 +62,7 @@ CREATE TABLE products (
 CREATE TABLE orders (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES profiles(id),
+    store_id UUID REFERENCES stores(id),
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'preparing', 'delivering', 'completed', 'cancelled')),
     total_price DECIMAL(10,2) NOT NULL,
     items JSONB NOT NULL,

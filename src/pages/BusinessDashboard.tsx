@@ -102,10 +102,11 @@ export const BusinessDashboard = () => {
             const allProducts = prods ?? [];
             setProducts(allProducts);
 
-            // ── 3. Fetch ALL orders (para calcular stats) ──────────────────
+            // ── 3. Fetch store orders (para calcular stats) ────────────────
             const { data: allOrders } = await supabase
                 .from('orders')
-                .select('id, status, total_price, created_at, user_id')
+                .select('id, status, total_price, created_at, user_id, profiles(full_name)')
+                .eq('store_id', store.id)
                 .order('created_at', { ascending: false });
 
             const orders = allOrders ?? [];
@@ -136,7 +137,7 @@ export const BusinessDashboard = () => {
             // ── 5. Recent orders (últimos 5) ───────────────────────────────
             const recent = orders.slice(0, 5).map(o => ({
                 id:       o.id,
-                customer: 'Cliente #' + o.id.slice(0, 6).toUpperCase(),
+                customer: (o.profiles as any)?.full_name || 'Cliente #' + o.id.slice(0, 6).toUpperCase(),
                 status:   o.status,
                 total:    Number(o.total_price ?? 0),
                 time:     timeAgo(o.created_at),

@@ -1,50 +1,46 @@
-# Estado de la Sesión — Traemelo App 🚀
+# 📕 Diario de Trabajo y Estado de la Sesión — Traemelo App 🚀
 
-## 📍 Última actualización: 12 de Marzo, 12:40 AM
-Hemos logrado resolver el error de base de datos "una vez por todas". El sistema ya es capaz de registrar negocios sin conflictos de identidad.
-
----
-
-## ✅ Lo que hemos logrado hoy:
-1.  **Arreglo Definitivo de Base de Datos:**
-    *   Ejecutamos `final_fix_database.sql` en Supabase.
-    *   Cambiamos IDs de categorías a `TEXT` para que coincidan con el frontend ('1', '2', '3').
-    *   Agregamos un Trigger que crea perfiles automáticamente al registrarse.
-2.  **Registro de Negocios Blindado:**
-    *   Modificamos `RegisterBusiness.tsx` para usar `upsert`.
-    *   Ahora, si registras el mismo negocio dos veces, solo se actualizan los datos, no da error.
-    *   El usuario `tioligorio@gmail.com` ya es funcional.
-3.  **Configuración de Supabase:**
-    *   Desactivamos "Confirm email" para pruebas rápidas.
-    *   Limpiamos tablas viejas conflictivas.
+Este documento mantiene un registro completo y diario de todo lo que construimos, para que nunca perdamos el contexto (incluso si se va la luz).
 
 ---
 
-## 📱 Cómo probar en el Celular:
-Para ver "Lubricantes en Cheoguo" en tu teléfono mientras estás en la misma Wi-Fi:
-1.  Busca tu IP local en la PC (Escribe `ipconfig` en una terminal de PowerShell).
-2.  Busca la línea que dice "Dirección IPv4" (ejemplo: `192.168.1.10`).
-3.  En tu celular, abre el navegador y entra a: `http://TU_IP:5173` (ejemplo: `http://192.168.1.10:5173`).
+## 📍 13 de Marzo de 2026 (Sesión Actual)
+**Estado:** Sistema de recuperación de cuentas y notificaciones in-app implementado.
+
+### ✅ Logros Completados:
+1. **Recuperación de Contraseña (Flujo Completo):**
+   - 👁️ Añadido botón "ojo" para mostrar/ocultar contraseñas en `Login.tsx` y `Register.tsx`.
+   - 📩 Creada la página `ForgotPassword.tsx` enrutada desde "Olvidé mi clave". Utiliza `supabase.auth.resetPasswordForEmail` para enviar enlace de recuperación por correo.
+   - 🔑 Creada la página `ResetPassword.tsx` que permite al usuario ingresar de forma segura su nueva clave tras atrapar el enlace de Supabase utilizando `supabase.auth.updateUser`.
+2. **Notificaciones para Comerciantes:**
+   - 🔔 Modificación en `AdminDashboard.tsx` para insertar automáticamente una notificación en la tabla `notifications` cuando un Admin **aprueba una tienda** o **un producto**.
+   - ✉️ Diálogo opcional para notificar la aprobación vía correo electrónico (`mailto:`) si el admin lo desea, ya que no contamos con servicio de correos automático (backend de correos Edge Funcions).
+3. **Actualización de Navegación (`App.tsx`):**
+   - Registradas las nuevas páginas `ForgotPassword` y `ResetPassword`.
+4. **Estadísticas Dinámicas en el Panel de Negocio:**
+   - En `BusinessDashboard.tsx`, el cálculo de ingresos, tickets, etc., ya no lee todos los pedidos globales, sino que está filtrado dinámicamente conectándose a Supabase mediante `store_id`.
+   - He creado un archivo llamado `add_store_to_orders.sql` con una migración para que corras en Supabase. Agrega el campo `store_id` a la tabla de pedidos.
+
+### 🛠️ Próximos pasos pendientes (Fase 2 / Backlog):
+- Revisión general de la interfaz de carga de imágenes para el logo.
+- Verificación del feed de productos dinámicos con datos reales de la BD.
+- Ajustes de perfil personal de Merchant vs Admin.
 
 ---
 
-## 🚀 Despliegue en Netlify
-La carpeta ya está preparada para subirla a Netlify:
-1.  **Configuración:** Ya existe el archivo `netlify.toml` que le dice a Netlify cómo construir la app y manejar las rutas.
-2.  **Comando de construcción:** `npm run build`
-3.  **Carpeta de salida:** `dist`
-4.  **Importante:** Cuando subas la app a Netlify, recuerda ir a **Site Settings > Environment Variables** y agregar:
-    *   `VITE_SUPABASE_URL`: Tu URL de Supabase.
-    *   `VITE_SUPABASE_ANON_KEY`: Tu llave anónima de Supabase.
+## 📍 12 de Marzo de 2026 (Sesión Anterior)
+**Estado:** Corrección definitiva de Base de Datos y Registro Único.
 
----
-
-## 🛠️ Próximos pasos (ROADMAP):
-- [ ] Verificar que "Lubricantes en Cheoguo" aparece en la pantalla principal.
-- [ ] Implementar la carga de imágenes reales para el logo.
-- [ ] Conectar la lista de productos real de la base de datos (actualmente es local).
+### ✅ Logros Completados:
+1. **Arreglo Definitivo de Base de Datos:**
+   - Ejecutamos `final_fix_database.sql` en Supabase.
+   - Categorías ahora son compatibles entre el Frontend y Backend ('1', '2', '3').
+   - Triggers implementados para auto-crear `profiles`.
+2. **Registro de Negocios Blindado:**
+   - Modificamos `RegisterBusiness.tsx` para usar `upsert`. Evita duplicados y corrige errores si la tienda ya existe.
+   - Configuración de Supabase: se desactivó la confirmación de email temporalmente para acelerar pruebas.
 
 ---
 
 > [!TIP]
-> **Contexto guardado.** Eduardo, si hay un corte, solo dile a Antigravity: *"Lee SESSION_RESTORE"* y sabré exactamente dónde quedamos. ¡Nos vemos mañana!
+> **Punto de Control Seguro.** Eduardo, este es nuestro guardado automático. Si se va la luz o cerramos la sesión, solo dile a la IA al volver: *"Lee el archivo SESSION_RESTORE.md para recuperar el contexto"*. Estaré listo para continuar justo donde lo dejamos. 
