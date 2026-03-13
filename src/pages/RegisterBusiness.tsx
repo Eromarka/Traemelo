@@ -403,7 +403,13 @@ export const RegisterBusiness = () => {
                                         type="tel"
                                         placeholder="+58 414 123 4567"
                                         value={form.phone}
-                                        onChange={e => update('phone', e.target.value)}
+                                        onChange={e => {
+                                            let val = e.target.value;
+                                            if (!val.startsWith('+58')) {
+                                                val = '+58' + val.replace(/^\+?5?8?/, '');
+                                            }
+                                            update('phone', val);
+                                        }}
                                         className="w-full bg-transparent text-white text-sm placeholder-white/20 outline-none"
                                     />
                                 </Field>
@@ -413,7 +419,13 @@ export const RegisterBusiness = () => {
                                         type="tel"
                                         placeholder="+58 412 765 4321"
                                         value={form.whatsapp}
-                                        onChange={e => update('whatsapp', e.target.value)}
+                                        onChange={e => {
+                                            let val = e.target.value;
+                                            if (val && !val.startsWith('+58')) {
+                                                val = '+58' + val.replace(/^\+?5?8?/, '');
+                                            }
+                                            update('whatsapp', val);
+                                        }}
                                         className="w-full bg-transparent text-white text-sm placeholder-white/20 outline-none"
                                     />
                                 </Field>

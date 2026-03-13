@@ -22,6 +22,8 @@ export const AddProduct = () => {
         is_promo: false
     });
 
+    const [uploading, setUploading] = useState(false);
+
     useEffect(() => {
         const fetchUserStore = async () => {
             if (!user) return;
@@ -36,6 +38,34 @@ export const AddProduct = () => {
         fetchUserStore();
     }, [user]);
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${user?.id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('products')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('products')
+                .getPublicUrl(filePath);
+
+            setProduct({ ...product, image_url: publicUrl });
+        } catch (error: any) {
+            alert('Error al subir imagen: ' + error.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!storeId) return alert('No se encontró una tienda asociada a tu cuenta');
@@ -48,11 +78,13 @@ export const AddProduct = () => {
                     ...product,
                     store_id: storeId,
                     price: parseFloat(product.price) || 0,
-                    category_id: product.category_id || null
+                    category_id: product.category_id || null,
+                    status: 'pending' // Siempre pendiente de aprobación por admin
                 }]);
 
             if (error) throw error;
             
+            alert('Producto enviado para revisión. El administrador lo aprobará pronto.');
             navigate('/business/dashboard');
         } catch (err: any) {
             alert('Error al guardar: ' + err.message);
@@ -133,21 +165,51 @@ export const AddProduct = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-2">URL de Imagen</label>
-                        <div className="glass-card-intense rounded-2xl border border-white/10 p-1">
-                            <input 
-                                type="url"
-                                className="w-full bg-transparent border-none focus:ring-0 px-4 py-3 text-white placeholder-white/20"
-                                value={product.image_url}
-                                onChange={e => setProduct({...product, image_url: e.target.value})}
-                            />
+                    <div className="space-y-4">
+                        <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-2">Foto del Producto</label>
+                        <div className="flex flex-col gap-4">
+                            <label className="w-full">
+                                <div className="glass-card-intense rounded-2xl border border-dashed border-white/20 p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]">
+                                    <span className={`material-symbols-outlined text-3xl ${uploading ? 'animate-spin' : 'text-white/40'}`}>
+                                        {uploading ? 'sync' : 'add_a_photo'}
+                                    </span>
+                                    <span className="text-xs font-bold text-white/60">
+                                        {uploading ? 'Subiendo imagen...' : 'Seleccionar foto desde mi teléfono'}
+                                    </span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="hidden" 
+                                        onChange={handleImageUpload}
+                                        disabled={uploading}
+                                    />
+                                </div>
+                            </label>
+
+                            <div className="space-y-2">
+                                <label className="text-[9px] uppercase font-black tracking-widest text-white/20 ml-2">O pega una URL directa</label>
+                                <div className="glass-card-intense rounded-2xl border border-white/10 p-1">
+                                    <input 
+                                        type="url"
+                                        placeholder="https://..."
+                                        className="w-full bg-transparent border-none focus:ring-0 px-4 py-3 text-sm text-white placeholder-white/20"
+                                        value={product.image_url}
+                                        onChange={e => setProduct({...product, image_url: e.target.value})}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div className="mt-4 rounded-3xl overflow-hidden h-40 border border-white/10 relative group">
-                            <img src={product.image_url} alt="Vista previa" className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                            <p className="absolute bottom-4 left-4 text-[10px] font-black uppercase tracking-widest opacity-60">Vista previa de imagen</p>
-                        </div>
+
+                        {product.image_url && (
+                            <div className="mt-4 rounded-3xl overflow-hidden h-48 border border-white/10 relative group shadow-2xl">
+                                <img src={product.image_url} alt="Vista previa" className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                                <div className="absolute bottom-4 left-4 flex flex-col gap-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary italic">Vista previa</p>
+                                    <p className="text-xs font-bold text-white/80">Así lo verán tus clientes una vez aprobado</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-3 p-4 glass-panel rounded-3xl border border-white/5">
