@@ -302,7 +302,6 @@ export const AddProduct = () => {
                         {loading ? 'Guardando...' : 'Publicar Producto'}
                     </Button>
                 </form>
-            </main>
             )}
         </div>
     );
