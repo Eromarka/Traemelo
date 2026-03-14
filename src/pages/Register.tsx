@@ -114,13 +114,23 @@ export const Register = () => {
                         {loading ? 'Creando...' : 'Registrarse'}
                     </button>
                     
-                    <button
-                        type="button"
-                        onClick={() => navigate('/login')}
-                        className="text-white/40 text-xs font-semibold hover:text-white transition-colors mt-2"
-                    >
-                        ¿Ya tienes cuenta? Inicia sesión
-                    </button>
+                    <div className="flex flex-col items-center gap-1 mt-2">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/login')}
+                            className="text-white/40 text-xs font-semibold hover:text-white transition-colors"
+                        >
+                            ¿Ya tienes cuenta? Inicia sesión
+                        </button>
+                        <div className="w-12 h-px bg-white/5 my-2" />
+                        <button
+                            type="button"
+                            onClick={() => navigate('/register-business')}
+                            className="text-primary text-[10px] font-black uppercase tracking-widest hover:brightness-125 transition-all"
+                        >
+                            ¿Tienes un Negocio? Regístrate aquí
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

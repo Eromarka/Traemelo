@@ -14,6 +14,7 @@ export const BottomNav = () => {
 
     const tabs = [
         { name: 'Inicio', icon: 'home', path: '/home', badge: 0 },
+        { name: 'Crea', icon: 'storefront', path: '/register-business', badge: 0 },
         { name: 'Directorio', icon: 'explore', path: '/directory', badge: 0 },
         { name: 'Carrito', icon: 'shopping_cart', path: '/cart', badge: totalItems },
         { name: 'Pedidos', icon: 'receipt_long', path: '/orders', badge: 0 },

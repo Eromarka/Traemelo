@@ -121,26 +121,50 @@ export const Profile = () => {
                 {/* Special Actions */}
                 <div className="pt-4 space-y-4">
                     {profile?.role === 'merchant' ? (
-                        <Button 
-                            onClick={() => navigate('/business/dashboard')}
-                            className="w-full h-16 rounded-[2rem] bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/20"
-                        >
-                            <div className="flex items-center justify-center gap-3">
-                                <span className="material-symbols-outlined">dashboard</span>
-                                <span>Panel de Negocio</span>
-                            </div>
-                        </Button>
+                        <div className="flex flex-col gap-3">
+                            <Button 
+                                onClick={() => navigate('/business/dashboard')}
+                                className="w-full h-16 rounded-[2rem] bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/20"
+                            >
+                                <div className="flex items-center justify-center gap-3">
+                                    <span className="material-symbols-outlined">dashboard</span>
+                                    <span>Panel de Negocio</span>
+                                </div>
+                            </Button>
+                            <button
+                                onClick={async () => {
+                                    await supabase.from('profiles').update({ role: 'user' }).eq('id', user?.id);
+                                    await refreshProfile();
+                                }}
+                                className="w-full py-4 text-white/40 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors"
+                            >
+                                Cambiar a vista de Comprador
+                            </button>
+                        </div>
                     ) : (
-                        <Button 
-                            onClick={() => navigate('/register-business')}
-                            className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-widest shadow-xl shadow-primary/20 border-none"
-                            style={{ backgroundImage: 'linear-gradient(to right, #ffb74d, #f57c00)' }}
-                        >
-                            <div className="flex items-center justify-center gap-3 text-sm">
-                                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>storefront</span>
-                                <span>Inscribir mi Negocio</span>
-                            </div>
-                        </Button>
+                        <div className="flex flex-col gap-3">
+                            <Button 
+                                onClick={() => navigate('/register-business')}
+                                className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-widest shadow-xl shadow-primary/20 border-none"
+                                style={{ backgroundImage: 'linear-gradient(to right, #ffb74d, #f57c00)' }}
+                            >
+                                <div className="flex items-center justify-center gap-3 text-sm">
+                                    <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>storefront</span>
+                                    <span>Inscribir mi Negocio</span>
+                                </div>
+                            </Button>
+                            {profile?.business_name && (
+                                <button
+                                    onClick={async () => {
+                                        await supabase.from('profiles').update({ role: 'merchant' }).eq('id', user?.id);
+                                        await refreshProfile();
+                                    }}
+                                    className="w-full py-4 text-white/40 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors"
+                                >
+                                    Activar modo Negocio
+                                </button>
+                            )}
+                        </div>
                     )}
 
                     <button 

@@ -5,8 +5,9 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { useImageUpload } from '../hooks/useImageUpload';
+import { localCategories } from '../data/localData';
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 interface FormData {
     // Step 1: Owner
@@ -14,24 +15,18 @@ interface FormData {
     owner_name: string;
     password: string;
     phone: string;
+    whatsapp: string;
     // Step 2: Store
     business_name: string;
     description: string;
-    category: string;
+    category_id: string;
     address: string;
+    opening_time: string;
+    closing_time: string;
     // Step 3: Images
     logo_url: string;
     image_url: string;
 }
-
-const CATEGORIES = [
-    'Restaurantes',
-    'Farmacias',
-    'Supermercados',
-    'Tecnología',
-    'Moda',
-    'Otros'
-];
 
 interface LocalFiles {
     logo: File | null;
@@ -44,11 +39,14 @@ export const RegisterBusiness = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState<Step>(1);
     const [form, setForm] = useState<FormData>({
-        email: '', owner_name: '', password: '', phone: '',
-        business_name: '', description: '', category: '', address: '',
+        email: '', owner_name: '', password: '', phone: '', whatsapp: '',
+        business_name: '', description: '', category_id: '', address: '',
+        opening_time: '08:00', closing_time: '18:00',
         logo_url: '', image_url: ''
     });
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
     const [files, setFiles] = useState<LocalFiles>({
         logo: null,
         image: null,

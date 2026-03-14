@@ -37,10 +37,13 @@ export const localCategories: Category[] = [
     { id: '2', name: 'Licores', icon: 'liquor', order: 2, path: '/search?category=2', color: 'text-purple-400' },
     { id: '3', name: 'Farmacia', icon: 'medical_services', order: 3, path: '/search?category=3', color: 'text-blue-400' },
     { id: '4', name: 'Panadería', icon: 'bakery_dining', order: 4, path: '/search?category=4', color: 'text-yellow-400' },
-    { id: '5', name: 'Frutas', icon: 'eco', order: 5, path: '/search?category=5', color: 'text-green-400' },
-    { id: '6', name: 'Construcción', icon: 'construction', order: 6, path: '/search?category=construccion', color: 'text-gray-400' },
-    { id: '7', name: 'Repuestos', icon: 'settings_input_component', order: 7, path: '/search?category=repuestos', color: 'text-slate-400' },
-    { id: '8', name: 'Agro', icon: 'agriculture', order: 8, path: '/search?category=agro', color: 'text-emerald-400' },
+    { id: '5', name: 'Frutas y Verduras', icon: 'eco', order: 5, path: '/search?category=5', color: 'text-green-400' },
+    { id: '6', name: 'Ferretería', icon: 'construction', order: 6, path: '/search?category=6', color: 'text-orange-600' },
+    { id: '7', name: 'Repuestos', icon: 'settings_input_component', order: 7, path: '/search?category=7', color: 'text-slate-400' },
+    { id: '8', name: 'Agro', icon: 'agriculture', order: 8, path: '/search?category=8', color: 'text-emerald-400' },
+    { id: '9', name: 'Moda y Calzado', icon: 'apparel', order: 9, path: '/search?category=9', color: 'text-pink-400' },
+    { id: '10', name: 'Supermercados', icon: 'shopping_basket', order: 10, path: '/search?category=10', color: 'text-red-400' },
+    { id: '11', name: 'Servicios', icon: 'plumbing', order: 11, path: '/search?category=11', color: 'text-cyan-400' },
 ];
 
 export const localProducts: Product[] = [
