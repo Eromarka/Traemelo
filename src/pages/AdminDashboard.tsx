@@ -121,22 +121,36 @@ export const AdminDashboard = () => {
     const handleApproveProduct = async (productId: string) => {
         setActionLoading(productId);
         
-        // Obtener detalles para notificar
-        const { data: prodData } = await supabase
-            .from('products')
-            .select('name, stores(user_id, name)')
-            .eq('id', productId)
-            .single();
+        try {
+            // 1. Obtener detalles para notificar y verificar si la tienda está activa
+            const { data: prodData, error: fetchErr } = await supabase
+                .from('products')
+                .select('name, store_id, stores(user_id, name, status)')
+                .eq('id', productId)
+                .single();
 
-        const { error } = await supabase
-            .from('products')
-            .update({ status: 'active' })
-            .eq('id', productId);
+            if (fetchErr) throw fetchErr;
 
-        if (!error) {
+            const storeStatus = (prodData as any).stores?.status;
+            if (storeStatus !== 'active') {
+                if (!confirm(`⚠️ La tienda "${(prodData as any).stores?.name}" aún está PENDIENTE. \n\nEl producto se marcará como aprobado, pero NO será visible en el Home hasta que apruebes la tienda en la pestaña anterior. \n\n¿Proceder de todos modos?`)) {
+                    setActionLoading(null);
+                    return;
+                }
+            }
+
+            // 2. Actualizar estado a 'active' (que es lo que useProducts busca)
+            const { error: updateErr } = await supabase
+                .from('products')
+                .update({ status: 'active' })
+                .eq('id', productId);
+
+            if (updateErr) throw updateErr;
+
+            // 3. Actualizar UI local
             setProducts(prev => prev.filter(p => p.id !== productId));
 
-            // Notificación al dueño
+            // 4. Notificación al dueño
             if (prodData && (prodData as any).stores?.user_id) {
                 await supabase.from('notifications').insert({
                     user_id: (prodData as any).stores.user_id,
@@ -145,8 +159,15 @@ export const AdminDashboard = () => {
                     type: 'success'
                 });
             }
+            
+            alert('¡Producto aprobado con éxito!');
+
+        } catch (err: any) {
+            console.error('Error al aprobar producto:', err);
+            alert(`Error de base de datos: ${err.message || 'No se pudo actualizar'}`);
+        } finally {
+            setActionLoading(null);
         }
-        setActionLoading(null);
     };
 
     const handleRejectStore = async (storeId: string) => {
