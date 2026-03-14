@@ -4,7 +4,8 @@
 INSERT INTO storage.buckets (id, name, public)
 VALUES 
   ('stores', 'stores', true),
-  ('profiles', 'profiles', true)
+  ('profiles', 'profiles', true),
+  ('products', 'products', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Políticas de Lectura (Público)
@@ -15,6 +16,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public Access Profiles') THEN
         CREATE POLICY "Public Access Profiles" ON storage.objects FOR SELECT USING (bucket_id = 'profiles');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public Access Products') THEN
+        CREATE POLICY "Public Access Products" ON storage.objects FOR SELECT USING (bucket_id = 'products');
     END IF;
 END $$;
 
@@ -27,6 +31,9 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Auth Upload Profiles') THEN
         CREATE POLICY "Auth Upload Profiles" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'profiles' AND auth.role() = 'authenticated');
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Auth Upload Products') THEN
+        CREATE POLICY "Auth Upload Products" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'products' AND auth.role() = 'authenticated');
+    END IF;
 END $$;
 
 -- 4. Políticas de Actualización
@@ -37,5 +44,8 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Auth Update Profiles') THEN
         CREATE POLICY "Auth Update Profiles" ON storage.objects FOR UPDATE USING (bucket_id = 'profiles' AND auth.role() = 'authenticated');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Auth Update Products') THEN
+        CREATE POLICY "Auth Update Products" ON storage.objects FOR UPDATE USING (bucket_id = 'products' AND auth.role() = 'authenticated');
     END IF;
 END $$;

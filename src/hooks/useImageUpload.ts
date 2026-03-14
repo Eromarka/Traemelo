@@ -32,7 +32,8 @@ export const useImageUpload = (bucketName: string, userId?: string) => {
         return null;
     };
 
-    const uploadImage = async (file: File): Promise<string | null> => {
+    const uploadImage = async (file: File, overrideUserId?: string): Promise<string | null> => {
+        const activeUserId = overrideUserId || userId;
         const validationError = validateFile(file);
         if (validationError) {
             setState(s => ({ ...s, error: validationError }));
@@ -44,8 +45,8 @@ export const useImageUpload = (bucketName: string, userId?: string) => {
         try {
             const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
             const timestamp = Date.now();
-            const filePath = userId
-                ? `${userId}/${timestamp}.${fileExt}`
+            const filePath = activeUserId
+                ? `${activeUserId}/${timestamp}.${fileExt}`
                 : `public/${timestamp}.${fileExt}`;
 
             setState(s => ({ ...s, progress: 30 }));

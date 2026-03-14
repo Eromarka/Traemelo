@@ -120,7 +120,7 @@ export const Profile = () => {
 
                 {/* Special Actions */}
                 <div className="pt-4 space-y-4">
-                    {profile?.role === 'merchant' && (
+                    {profile?.role === 'merchant' ? (
                         <Button 
                             onClick={() => navigate('/business/dashboard')}
                             className="w-full h-16 rounded-[2rem] bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/20"
@@ -128,6 +128,17 @@ export const Profile = () => {
                             <div className="flex items-center justify-center gap-3">
                                 <span className="material-symbols-outlined">dashboard</span>
                                 <span>Panel de Negocio</span>
+                            </div>
+                        </Button>
+                    ) : (
+                        <Button 
+                            onClick={() => navigate('/register-business')}
+                            className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-widest shadow-xl shadow-primary/20 border-none"
+                            style={{ backgroundImage: 'linear-gradient(to right, #ffb74d, #f57c00)' }}
+                        >
+                            <div className="flex items-center justify-center gap-3 text-sm">
+                                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>storefront</span>
+                                <span>Inscribir mi Negocio</span>
                             </div>
                         </Button>
                     )}

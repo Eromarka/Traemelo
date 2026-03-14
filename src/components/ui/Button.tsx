@@ -16,7 +16,7 @@ export const Button = ({
     variant = 'primary',
     className = '',
     disabled = false,
-    type = 'button',
+    type = 'submit',
 }: ButtonProps) => {
     const baseStyles = 'inline-flex items-center justify-center font-bold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none';
 

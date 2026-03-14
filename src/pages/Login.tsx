@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 
 export const Login = () => {
     const navigate = useNavigate();
+    const [loginMode, setLoginMode] = useState<'user' | 'business'>('user');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -17,9 +18,25 @@ export const Login = () => {
         setError(null);
         
         try {
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) throw error;
-            navigate('/home');
+            const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+            if (authError) throw authError;
+
+            // Fetch profile array directly here to ensure synchronous redirect logic
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', data.user.id)
+                .single();
+
+            // Enrutamiento dependiente de rol -> redirigir donde pertenece independientemente del loginMode (loginMode es solo UI pre-login)
+            if (profile?.role === 'merchant') {
+                navigate('/business/dashboard');
+            } else if (profile?.role === 'admin') {
+                navigate('/admin/dashboard');
+            } else {
+                navigate('/home');
+            }
+            
         } catch (err: any) {
             setError(err.message || 'Error al iniciar sesión');
         } finally {
@@ -43,11 +60,31 @@ export const Login = () => {
                 <div className="flex flex-col items-center mb-8">
                     <div className="size-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
                         <span className="material-symbols-outlined text-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                            storefront
+                            {loginMode === 'business' ? 'storefront' : 'person'}
                         </span>
                     </div>
                     <h1 className="text-2xl font-black text-white tracking-tight">Bienvenido</h1>
-                    <p className="text-white/30 text-xs mt-1">Inicia sesión en tu cuenta</p>
+                    <p className="text-white/30 text-xs mt-1">
+                        {loginMode === 'business' ? 'Gestiona tu negocio' : 'Inicia sesión en tu cuenta'}
+                    </p>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex bg-black/40 p-1 rounded-2xl mb-6 border border-white/5">
+                    <button
+                        type="button"
+                        onClick={() => { setLoginMode('user'); setError(null); }}
+                        className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${loginMode === 'user' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-white/50 hover:text-white'}`}
+                    >
+                        Usuario
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { setLoginMode('business'); setError(null); }}
+                        className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${loginMode === 'business' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-white/50 hover:text-white'}`}
+                    >
+                        Negocio
+                    </button>
                 </div>
 
                 {error && (
@@ -73,7 +110,7 @@ export const Login = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             required
                             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-white/20"
-                            placeholder="tu@email.com"
+                            placeholder={loginMode === 'business' ? 'negocio@email.com' : 'tu@email.com'}
                         />
                     </div>
                     
@@ -122,7 +159,7 @@ export const Login = () => {
                         {loading ? (
                             <>
                                 <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                Iniciando...
+                                Entrando...
                             </>
                         ) : 'Entrar'}
                     </button>
@@ -135,7 +172,7 @@ export const Login = () => {
 
                     <button
                         type="button"
-                        onClick={() => navigate('/register')}
+                        onClick={() => navigate(loginMode === 'business' ? '/register-business' : '/register')}
                         className="w-full py-3.5 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-widest hover:bg-white/10 transition-colors active:scale-95"
                     >
                         ¿No tienes cuenta? Regístrate

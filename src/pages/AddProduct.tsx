@@ -12,6 +12,7 @@ export const AddProduct = () => {
     const { user } = useAuth();
     const { categories } = useCategories();
     const [loading, setLoading] = useState(false);
+    const [initializingStore, setInitializingStore] = useState(true);
     const [storeId, setStoreId] = useState<string | null>(null);
     const { uploadImage, uploading, progress, error: uploadError, clearError } = useImageUpload('products', user?.id);
 
@@ -26,14 +27,24 @@ export const AddProduct = () => {
 
     useEffect(() => {
         const fetchUserStore = async () => {
-            if (!user) return;
-            const { data } = await supabase
-                .from('stores')
-                .select('id')
-                .eq('user_id', user.id)
-                .single();
-            
-            if (data) setStoreId(data.id);
+            if (!user) {
+                setInitializingStore(false);
+                return;
+            }
+            try {
+                const { data, error: storeErr } = await supabase
+                    .from('stores')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+                
+                if (storeErr) throw storeErr;
+                if (data) setStoreId(data.id);
+            } catch (err) {
+                console.error("Error fetching store:", err);
+            } finally {
+                setInitializingStore(false);
+            }
         };
         fetchUserStore();
     }, [user]);
@@ -59,6 +70,11 @@ export const AddProduct = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!storeId) return alert('No se encontró una tienda asociada a tu cuenta');
+        if (uploading) return alert('Espera a que termine de subir la imagen...');
+        if (!product.image_url) return alert('Debes añadir una foto del producto');
+        if (product.image_url.startsWith('blob:')) {
+            return alert('Hubo un problema al subir la imagen. Por favor, inténtalo de nuevo.');
+        }
         
         setLoading(true);
         try {
@@ -74,7 +90,7 @@ export const AddProduct = () => {
 
             if (error) throw error;
             
-            alert('Producto enviado para revisión. El administrador lo aprobará pronto.');
+            alert('¡Producto enviado! El administrador lo aprobará pronto.');
             navigate('/business/dashboard');
         } catch (err: any) {
             alert('Error al guardar: ' + err.message);
@@ -90,12 +106,30 @@ export const AddProduct = () => {
                     onClick={() => navigate('/business/dashboard')}
                     className="size-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center active:scale-95 transition-all"
                 >
-                    <span className="material-symbols-outlined text-white">chevron_left</span>
+                    <span className="material-symbols-outlined text-white text-xl">arrow_back_ios_new</span>
                 </button>
                 <h1 className="text-xl font-black tracking-tighter">Añadir <span className="text-primary italic">Producto</span></h1>
             </header>
 
-            <main className="flex-1 p-6 z-10">
+            {initializingStore ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-10 gap-4 text-center">
+                    <div className="size-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-white/40 uppercase font-black text-xs tracking-widest">Identificando tu negocio...</p>
+                </div>
+            ) : !storeId ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-10 gap-6 text-center animate-in fade-in zoom-in duration-500">
+                    <div className="size-20 rounded-3xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                        <span className="material-symbols-outlined text-red-500 text-4xl">storefront</span>
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-xl font-black">¡Oops! Sin Negocio</h2>
+                        <p className="text-white/40 text-sm max-w-xs mx-auto">No hemos encontrado un negocio asociado a tu cuenta. Debes registrar uno primero.</p>
+                    </div>
+                    <Button onClick={() => navigate('/register-business')} className="px-8">
+                        Registrar mi Negocio
+                    </Button>
+                </div>
+            ) : (
                 <form onSubmit={handleSubmit} className="space-y-6 max-w-lg mx-auto">
                     <div className="space-y-2">
                         <label className="text-[10px] uppercase font-black tracking-widest text-white/40 ml-2">Nombre del Producto</label>
@@ -269,6 +303,7 @@ export const AddProduct = () => {
                     </Button>
                 </form>
             </main>
+            )}
         </div>
     );
 };

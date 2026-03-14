@@ -4,25 +4,22 @@
 
 ---
 
-## ✅ COMPLETADO (Esta sesión — 10 Mar)
+## ✅ COMPLETADO (Esta sesión — 13 Mar)
 
-- [x] **Build sin errores** — `addToCart` corregido en `Concierge.tsx` (era `addItem`, nombre incorrecto)
-- [x] **Mensaje WhatsApp dinámico** en `Checkout.tsx` — lista productos, subtotal, comisión y total
-- [x] **Hook `useAnalytics`** — registra clics (call/whatsapp/view) en tabla `leads` de Supabase
-- [x] **Hook `useBusinesses`** — conecta el Directorio a Supabase con fallback a datos locales
-- [x] **Hook `useCategories`** — conecta categorías a Supabase con fallback a datos locales
-- [x] **`BusinessDirectory.tsx`** — usa hooks reales, spinner de carga, filtro compatible Supabase+local
-- [x] **`SearchResults.tsx`** — usa `useBusinesses` y `useCategories` en lugar de datos hardcodeados
-- [x] **`database_schema.sql`** actualizado — tablas: `categories`, `stores`, `products`, `orders`, `leads`
-- [x] **Catálogo Concierge** — 20+ productos en `localData.ts` (carnes, harinas, bebidas, construcción, farmacia)
-- [x] **Métodos de pago** en `Concierge.tsx`: Zelle, Pago Móvil, Binance USDT, Efectivo, Transferencia
+- [x] **Login Pro & Dual Role** — Selector de "Soy Usuario" / "Tengo un Negocio" con redirección automática inteligente.
+- [x] **Smart Registration** — El registro de negocios detecta si el usuario ya está logueado para evitar duplicados.
+- [x] **Fix Botón Publicar** — Corregido bug global en `Button.tsx` que impedía el envío de formularios de productos.
+- [x] **Validación de Store** — Pantalla de `AddProduct.tsx` ahora verifica propiedad del negocio antes de permitir la subida.
+- [x] **Infraestructura Storage** — Script `setup_storage.sql` actualizado para soportar fotos de productos.
 
 ---
 
 ## 🔴 PENDIENTE — PRÓXIMAS TAREAS (en orden de prioridad)
 
-- [x] **👤 Perfil Real con Clerk** — Muestra foto, nombre y email reales con botón logout funcional. Avatar en BottomNav corregido. Redirección protegida.
-- [x] **🏪 Registro de Negocios B2B** — Formulario 3 pasos, banner en Home, conexión a Supabase y WhatsApp (+584247810500).
+- [ ] **📦 Gestión de Inventario para Comercios** — Permitir a los dueños ver, editar y borrar sus propios productos subidos.
+- [ ] **👁️ Link de Negocio para Instagram** — Crear rutas dinámicas `/tienda/:slug` para que los comercios compartan su perfil directamente.
+- [ ] **🛡️ Panel Admin (Aprobación)** — Panel privado para moderar y aprobar negocios/productos subidos (status `pending` -> `active`).
+- [ ] **🛒 Checkout Checkout Directo** — Lógica para comprar productos específicos de una tienda vía WhatsApp.
 - [x] **🛍️ Catálogo Concierge — Arreglar Filtro Vacío** — Ahora usa `useCategories` y muestra todos los productos del catálogo.
 - [x] **⚡ Optimización de Bundle** — Lazy loading y manualChunks en Vite están listos y redujeron el peso del JS principal.
 - [x] **🔔 Notificaciones Reales** — Conectado a tabla `orders` en Supabase con actualizaciones en tiempo real y fallback de interfaz.

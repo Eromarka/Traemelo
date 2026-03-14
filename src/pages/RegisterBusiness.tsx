@@ -1,55 +1,68 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { localCategories } from '../data/localData';
 import { useAuth } from '../contexts/AuthContext';
+import { Button } from '../components/ui/Button';
 import { useImageUpload } from '../hooks/useImageUpload';
 
+type Step = 1 | 2 | 3;
+
 interface FormData {
-    business_name: string;
-    owner_name: string;
-    category_id: string;
-    phone: string;
-    whatsapp: string;
-    description: string;
-    address: string;
-    opening_time: string;
-    closing_time: string;
-    logo_url: string;
-    image_url: string; // Nueva foto de portada
+    // Step 1: Owner
     email: string;
+    owner_name: string;
     password: string;
+    phone: string;
+    // Step 2: Store
+    business_name: string;
+    description: string;
+    category: string;
+    address: string;
+    // Step 3: Images
+    logo_url: string;
+    image_url: string;
 }
 
-const INITIAL_FORM: FormData = {
-    business_name: '',
-    owner_name: '',
-    category_id: '',
-    phone: '',
-    whatsapp: '',
-    description: '',
-    address: '',
-    opening_time: '08:00',
-    closing_time: '18:00',
-    logo_url: '',
-    image_url: '',
-    email: '',
-    password: '',
-};
+const CATEGORIES = [
+    'Restaurantes',
+    'Farmacias',
+    'Supermercados',
+    'Tecnología',
+    'Moda',
+    'Otros'
+];
 
-type Step = 1 | 2 | 3 | 4;
+interface LocalFiles {
+    logo: File | null;
+    image: File | null;
+    logoPreview: string;
+    imagePreview: string;
+}
 
 export const RegisterBusiness = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState<Step>(1);
-    const [form, setForm] = useState<FormData>(INITIAL_FORM);
-    const [loading, setLoading] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
+    const [form, setForm] = useState<FormData>({
+        email: '', owner_name: '', password: '', phone: '',
+        business_name: '', description: '', category: '', address: '',
+        logo_url: '', image_url: ''
+    });
     const [error, setError] = useState('');
-    const { refreshProfile } = useAuth();
-    const { uploadImage: uploadStoreLogo, uploading: uploadingLogo } = useImageUpload('stores');
-    const { uploadImage: uploadStoreImage, uploading: uploadingImage } = useImageUpload('stores');
+    const [files, setFiles] = useState<LocalFiles>({
+        logo: null,
+        image: null,
+        logoPreview: '',
+        imagePreview: ''
+    });
+    const { user, refreshProfile, loading: authLoading } = useAuth();
+    const { uploadImage, uploading: isUploading } = useImageUpload('stores');
+
+    useEffect(() => {
+        if (!authLoading && user && step === 1) {
+            setStep(2);
+        }
+    }, [user, authLoading, step]);
 
     const update = (field: keyof FormData, value: string) => {
         setForm(prev => ({ ...prev, [field]: value }));
@@ -89,32 +102,47 @@ export const RegisterBusiness = () => {
             console.log('🚀 Iniciando registro de:', form.business_name);
 
             // 1. Obtener o Crear el Usuario en Supabase Auth
-            let userId: string | undefined;
+            let userId: string | undefined = user?.id;
 
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: form.email,
-                password: form.password,
-                options: { data: { full_name: form.owner_name } }
-            });
+            if (!userId) {
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: form.email,
+                    password: form.password,
+                    options: { data: { full_name: form.owner_name } }
+                });
 
-            if (authError) {
-                if (authError.message.includes('already registered')) {
-                    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-                        email: form.email,
-                        password: form.password,
-                    });
-                    if (loginError) throw new Error('El correo ya existe. Si es tuyo, verifica la contraseña.');
-                    userId = loginData.user?.id;
+                if (authError) {
+                    if (authError.message.includes('already registered') || authError.message.includes('already in use')) {
+                        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                            email: form.email,
+                            password: form.password,
+                        });
+                        if (loginError) throw new Error('El correo ya existe. Si es tuyo, verifica la contraseña.');
+                        userId = loginData.user?.id;
+                    } else {
+                        throw authError;
+                    }
                 } else {
-                    throw authError;
+                    userId = authData.user?.id;
                 }
-            } else {
-                userId = authData.user?.id;
             }
 
             if (!userId) throw new Error("No se pudo identificar al usuario.");
 
-            // 2. Guardar Datos del Dueño (Profile)
+            // 3. Subir Imágenes (Ahora que tenemos el userId)
+            let finalLogoUrl = form.logo_url;
+            let finalImageUrl = form.image_url;
+
+            if (files.logo) {
+                const url = await uploadImage(files.logo, userId);
+                if (url) finalLogoUrl = url;
+            }
+            if (files.image) {
+                const url = await uploadImage(files.image, userId);
+                if (url) finalImageUrl = url;
+            }
+
+            // 4. Guardar Datos del Dueño (Profile)
             const { error: profileError } = await supabase
                 .from('profiles')
                 .upsert({
@@ -130,7 +158,7 @@ export const RegisterBusiness = () => {
                 throw new Error("Error guardando perfil: " + profileError.message);
             }
 
-            // 3. Guardar Datos del Negocio (Store)
+            // 5. Guardar Datos del Negocio (Store)
             const { error: storeError } = await supabase
                 .from('stores')
                 .upsert({
@@ -143,8 +171,8 @@ export const RegisterBusiness = () => {
                     description: form.description,
                     address: form.address,
                     opening_hours: `${form.opening_time} - ${form.closing_time}`,
-                    logo_url: form.logo_url,
-                    image_url: form.image_url,
+                    logo_url: finalLogoUrl,
+                    image_url: finalImageUrl,
                     status: 'pending',
                     is_active: true,
                     trial_ends_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
@@ -250,7 +278,7 @@ export const RegisterBusiness = () => {
             {/* Header */}
             <header className="sticky top-0 z-50 flex items-center gap-4 px-5 pt-6 pb-4 backdrop-blur-3xl border-b border-white/5">
                 <button
-                    onClick={() => step === 1 ? navigate(-1) : setStep(prev => (prev - 1) as Step)}
+                    onClick={() => (step === 1 || (user && step === 2)) ? navigate(-1) : setStep(prev => (prev - 1) as Step)}
                     className="flex size-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 active:scale-90 transition-all"
                 >
                     <span className="material-symbols-outlined text-white text-xl">arrow_back_ios_new</span>
@@ -386,6 +414,52 @@ export const RegisterBusiness = () => {
                                         className="w-full bg-transparent text-white text-sm placeholder-white/20 outline-none resize-none"
                                     />
                                 </Field>
+
+                                {/* Mini Panel de Fotos en Paso 2 */}
+                                <div className="grid grid-cols-2 gap-4 mt-2">
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] uppercase font-black text-white/40 ml-2">Logo (Opcional)</label>
+                                        <div className="relative aspect-square rounded-2xl overflow-hidden glass-card border border-white/10 flex flex-col items-center justify-center gap-2 group cursor-pointer hover:border-primary/40 transition-all">
+                                            {files.logoPreview ? (
+                                                <img src={files.logoPreview} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="material-symbols-outlined text-white/20 text-3xl">add_a_photo</span>
+                                            )}
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                className="absolute inset-0 opacity-0 cursor-pointer" 
+                                                onChange={e => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        setFiles(f => ({ ...f, logo: file, logoPreview: URL.createObjectURL(file) }));
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] uppercase font-black text-white/40 ml-2">Portada (Opcional)</label>
+                                        <div className="relative aspect-square rounded-2xl overflow-hidden glass-card border border-white/10 flex flex-col items-center justify-center gap-2 group cursor-pointer hover:border-primary/40 transition-all">
+                                            {files.imagePreview ? (
+                                                <img src={files.imagePreview} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="material-symbols-outlined text-white/20 text-3xl">add_photo_alternate</span>
+                                            )}
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                className="absolute inset-0 opacity-0 cursor-pointer" 
+                                                onChange={e => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        setFiles(f => ({ ...f, image: file, imagePreview: URL.createObjectURL(file) }));
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -488,92 +562,7 @@ export const RegisterBusiness = () => {
                         >
                              <div>
                                 <h2 className="text-white text-2xl font-black mb-1">Confirmar</h2>
-                                <p className="text-white/40 text-sm">Añade tus fotos y revisa los datos</p>
-                            </div>
-
-                            {/* Fotos del Negocio */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[9px] uppercase font-black text-white/40 ml-2">Logo</label>
-                                    <div className="relative aspect-square rounded-2xl overflow-hidden glass-card border border-white/10 flex flex-col items-center justify-center gap-2 group">
-                                        {form.logo_url ? (
-                                            <>
-                                                <img src={form.logo_url} alt="Logo" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <label className="cursor-pointer p-2 rounded-full bg-primary/20 backdrop-blur-md border border-primary/40">
-                                                        <span className="material-symbols-outlined text-primary text-sm">edit</span>
-                                                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                const url = await uploadStoreLogo(file);
-                                                                if (url) update('logo_url', url);
-                                                            }
-                                                        }} />
-                                                    </label>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <label className="cursor-pointer flex flex-col items-center gap-1 group">
-                                                <div className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/40 transition-all">
-                                                    {uploadingLogo ? (
-                                                        <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                                    ) : (
-                                                        <span className="material-symbols-outlined text-white/40 group-hover:text-primary">add_a_photo</span>
-                                                    )}
-                                                </div>
-                                                <span className="text-[8px] font-black uppercase text-white/30">Subir Logo</span>
-                                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        const url = await uploadStoreLogo(file);
-                                                        if (url) update('logo_url', url);
-                                                    }
-                                                }} />
-                                            </label>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[9px] uppercase font-black text-white/40 ml-2">Foto de Portada</label>
-                                    <div className="relative aspect-square rounded-2xl overflow-hidden glass-card border border-white/10 flex flex-col items-center justify-center gap-2 group">
-                                        {form.image_url ? (
-                                            <>
-                                                <img src={form.image_url} alt="Portada" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <label className="cursor-pointer p-2 rounded-full bg-primary/20 backdrop-blur-md border border-primary/40">
-                                                        <span className="material-symbols-outlined text-primary text-sm">edit</span>
-                                                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                const url = await uploadStoreImage(file);
-                                                                if (url) update('image_url', url);
-                                                            }
-                                                        }} />
-                                                    </label>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <label className="cursor-pointer flex flex-col items-center gap-1 group">
-                                                <div className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/40 transition-all">
-                                                    {uploadingImage ? (
-                                                        <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                                    ) : (
-                                                        <span className="material-symbols-outlined text-white/40 group-hover:text-primary">add_photo_alternate</span>
-                                                    )}
-                                                </div>
-                                                <span className="text-[8px] font-black uppercase text-white/30">Subir Portada</span>
-                                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        const url = await uploadStoreImage(file);
-                                                        if (url) update('image_url', url);
-                                                    }
-                                                }} />
-                                            </label>
-                                        )}
-                                    </div>
-                                </div>
+                                <p className="text-white/40 text-sm">Revisa los datos antes de enviar</p>
                             </div>
 
                             {/* Card resumen */}
@@ -657,7 +646,10 @@ export const RegisterBusiness = () => {
                     className="relative w-full py-4 rounded-2xl bg-primary text-black font-black uppercase tracking-widest text-sm shadow-xl disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                     {loading ? (
-                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        <div className="flex flex-col items-center gap-1">
+                             <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                             <span className="text-[10px] font-black">{isUploading ? 'Subiendo Fotos...' : 'Guardando...'}</span>
+                        </div>
                     ) : step < 4 ? (
                         <>
                             Continuar
