@@ -24,7 +24,7 @@ interface Product {
     image_url: string;
     store_id: string;
     status: 'pending' | 'approved' | 'rejected';
-    stores?: { business_name: string };
+    stores?: { name: string; business_name?: string };
 }
 
 export const AdminDashboard = () => {
@@ -63,9 +63,13 @@ export const AdminDashboard = () => {
         setIsLoading(true);
         const { data, error } = await supabase
             .from('products')
-            .select('*, stores(business_name)')
+            .select('*, stores(*)')
             .eq('status', 'pending')
             .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Error fetching pending products:", error);
+        }
 
         if (!error && data) setProducts(data);
         setIsLoading(false);
@@ -126,16 +130,16 @@ export const AdminDashboard = () => {
 
         const { error } = await supabase
             .from('products')
-            .update({ status: 'approved' })
+            .update({ status: 'active' })
             .eq('id', productId);
 
         if (!error) {
             setProducts(prev => prev.filter(p => p.id !== productId));
 
             // Notificación al dueño
-            if (prodData?.stores?.user_id) {
+            if (prodData && (prodData as any).stores?.user_id) {
                 await supabase.from('notifications').insert({
-                    user_id: prodData.stores.user_id,
+                    user_id: (prodData as any).stores.user_id,
                     title: '✅ Producto Aprobado',
                     message: `Tu producto "${prodData.name}" ya está visible al público.`,
                     type: 'success'
@@ -327,7 +331,7 @@ export const AdminDashboard = () => {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="text-white font-black text-lg tracking-tight truncate">{product.name}</h3>
-                                                <p className="text-primary text-[9px] font-black uppercase tracking-widest mt-1">{product.stores?.business_name || 'Negocio'}</p>
+                                                <p className="text-primary text-[9px] font-black uppercase tracking-widest mt-1">{product.stores?.name || product.stores?.business_name || 'Negocio'}</p>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-xl font-black text-emerald-400">${product.price}</p>
