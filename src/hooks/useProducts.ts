@@ -11,21 +11,36 @@ export const useProducts = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
+                // Fetch products that are active
+                // We also filter by store status in the client if the join is complex
                 const { data, error } = await supabase
                     .from('products')
-                    .select('*, stores!inner(status)')
-                    .eq('stores.status', 'active')
+                    .select('*, stores(status, name, business_name)')
                     .eq('status', 'active')
                     .order('created_at', { ascending: false });
 
-                if (error || !data || data.length === 0) {
-                    console.log("Supabase falló o está vacío, usando localProducts");
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    console.log("No real products found, using localProducts as fallback");
                     setProducts(localProducts);
                 } else {
-                    setProducts(data);
+                    // Filter to only show products from active stores
+                    const activeProducts = data.filter((p: any) => p.stores?.status === 'active');
+                    
+                    if (activeProducts.length === 0) {
+                        setProducts(localProducts);
+                    } else {
+                        // Map store name for compatibility if needed
+                        const mappedProducts = activeProducts.map((p: any) => ({
+                            ...p,
+                            store_name: p.stores?.business_name || p.stores?.name || 'Negocio'
+                        }));
+                        setProducts(mappedProducts);
+                    }
                 }
             } catch (err: any) {
-                console.error("Error fetching products, usando localProducts fallback:", err);
+                console.error("Error fetching products:", err);
                 setError(err.message || 'Error fetching products');
                 setProducts(localProducts);
             } finally {

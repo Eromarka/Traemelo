@@ -6,165 +6,133 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface Store {
     id: string;
-    name: string;           // campo real en tabla stores
-    business_name?: string; // compatibilidad con RegisterBusiness
-    address: string;
-    description: string;
-    user_id: string;
-    created_at: string;
+    name: string;
+    owner_name: string;
     image_url: string;
-    status: 'pending' | 'active' | 'rejected' | 'suspended';
+    description: string;
+    status: 'pending' | 'active' | 'suspended';
+    created_at: string;
+    business_name?: string;
+    address?: string;
 }
 
 interface Product {
     id: string;
     name: string;
-    description: string;
     price: number;
     image_url: string;
+    description: string;
+    status: 'pending' | 'active' | 'suspended';
     store_id: string;
-    status: 'pending' | 'approved' | 'rejected';
-    stores?: { name: string; business_name?: string };
+    stores?: { name: string; business_name?: string; user_id?: string; status?: string };
 }
 
 export const AdminDashboard = () => {
     const navigate = useNavigate();
-    const { profile } = useAuth();
+    const { user } = useAuth();
+    const [profile, setProfile] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [stores, setStores] = useState<Store[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'stores' | 'products' | 'all'>('stores');
     const [allStores, setAllStores] = useState<Store[]>([]);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'stores' | 'products' | 'all'>('stores');
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     useEffect(() => {
-        if (profile && profile.role !== 'admin') {
-            navigate('/home');
+        const checkAdmin = async () => {
+            if (!user) {
+                navigate('/login');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (error || data?.role !== 'admin') {
+                setProfile(data);
+                navigate('/home');
+                return;
+            }
+
+            setProfile(data);
+            await fetchData();
+        };
+
+        checkAdmin();
+    }, [user, navigate]);
+
+    useEffect(() => {
+        if (profile) {
+            fetchData();
         }
-        if (activeTab === 'stores') fetchStores();
-        if (activeTab === 'products') fetchProducts();
-        if (activeTab === 'all') fetchAllStores();
-    }, [profile, activeTab]);
+    }, [activeTab]);
 
-    const fetchStores = async () => {
+    const fetchData = async () => {
         setIsLoading(true);
-        const { data, error } = await supabase
-            .from('stores')
-            .select('*')
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false });
-
-        if (!error && data) setStores(data as Store[]);
-        setIsLoading(false);
-    };
-
-    const fetchProducts = async () => {
-        setIsLoading(true);
-        const { data, error } = await supabase
-            .from('products')
-            .select('*, stores(*)')
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error("Error fetching pending products:", error);
+        try {
+            if (activeTab === 'stores') {
+                const { data, error } = await supabase
+                    .from('stores')
+                    .select('*')
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
+                if (!error && data) setStores(data as Store[]);
+            } else if (activeTab === 'products') {
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('*, stores(name, business_name, user_id, status)')
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
+                if (!error && data) setProducts(data as Product[]);
+            } else if (activeTab === 'all') {
+                const { data, error } = await supabase
+                    .from('stores')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                if (!error && data) setAllStores(data as Store[]);
+            }
+        } catch (err) {
+            console.error("Error fetching data:", err);
+        } finally {
+            setIsLoading(false);
         }
-
-        if (!error && data) setProducts(data);
-        setIsLoading(false);
-    };
-
-    const fetchAllStores = async () => {
-        setIsLoading(true);
-        const { data, error } = await supabase
-            .from('stores')
-            .select('*')
-            .order('created_at', { ascending: false });
-        if (!error && data) setAllStores(data as Store[]);
-        setIsLoading(false);
     };
 
     const handleApproveStore = async (storeId: string) => {
         setActionLoading(storeId);
-        
-        // Fetch store details to get the generic user_id
-        const { data: storeDetails } = await supabase.from('stores').select('name, user_id').eq('id', storeId).single();
+        try {
+            // Get store details for notification
+            const { data: storeDetails } = await supabase
+                .from('stores')
+                .select('name, user_id')
+                .eq('id', storeId)
+                .single();
 
-        const { error } = await supabase
-            .from('stores')
-            .update({ status: 'active' })
-            .eq('id', storeId);
+            const { error } = await supabase
+                .from('stores')
+                .update({ status: 'active', is_active: true })
+                .eq('id', storeId);
 
-        if (!error) {
+            if (error) throw error;
+
             setStores(prev => prev.filter(s => s.id !== storeId));
 
-            // Crear notificación In-App
+            // Create notification
             if (storeDetails?.user_id) {
                 await supabase.from('notifications').insert({
                     user_id: storeDetails.user_id,
                     title: '🎉 ¡Tienda Activa!',
-                    message: `Felicidades, tu tienda "${storeDetails.name}" ha sido aprobada. Ahora está visible para todos.`,
-                    type: 'success'
-                });
-
-                // Simular envío de correo solicitando abrir cliente de email (Al no tener backend)
-                if (window.confirm('Tienda Aprobada in-app 🎉.\n¿Deseas enviar un correo al comerciante avisándole?')) {
-                    // Idealmente se pediría el email uniendo stores -> profiles, pero no guardamos email en profile por defecto.
-                    window.open(`mailto:?subject=Tu%20tienda%20ha%20sido%20aprobada&body=Hola,%20tu%20tienda%20"${encodeURIComponent(storeDetails.name)}"%20en%20Traemelo%20ha%20sido%20aprobada.%20%C2%A1Ya%20puedes%20vender!`);
-                }
-            }
-        }
-        setActionLoading(null);
-    };
-
-    const handleApproveProduct = async (productId: string) => {
-        setActionLoading(productId);
-        
-        try {
-            // 1. Obtener detalles para notificar y verificar si la tienda está activa
-            const { data: prodData, error: fetchErr } = await supabase
-                .from('products')
-                .select('name, store_id, stores(user_id, name, status)')
-                .eq('id', productId)
-                .single();
-
-            if (fetchErr) throw fetchErr;
-
-            const storeStatus = (prodData as any).stores?.status;
-            if (storeStatus !== 'active') {
-                if (!confirm(`⚠️ La tienda "${(prodData as any).stores?.name}" aún está PENDIENTE. \n\nEl producto se marcará como aprobado, pero NO será visible en el Home hasta que apruebes la tienda en la pestaña anterior. \n\n¿Proceder de todos modos?`)) {
-                    setActionLoading(null);
-                    return;
-                }
-            }
-
-            // 2. Actualizar estado a 'active' (que es lo que useProducts busca)
-            const { error: updateErr } = await supabase
-                .from('products')
-                .update({ status: 'active' })
-                .eq('id', productId);
-
-            if (updateErr) throw updateErr;
-
-            // 3. Actualizar UI local
-            setProducts(prev => prev.filter(p => p.id !== productId));
-
-            // 4. Notificación al dueño
-            if (prodData && (prodData as any).stores?.user_id) {
-                await supabase.from('notifications').insert({
-                    user_id: (prodData as any).stores.user_id,
-                    title: '✅ Producto Aprobado',
-                    message: `Tu producto "${prodData.name}" ya está visible al público.`,
+                    message: `Felicidades, tu tienda "${storeDetails.name}" ha sido aprobada.`,
                     type: 'success'
                 });
             }
-            
-            alert('¡Producto aprobado con éxito!');
-
+            alert('Tienda aprobada con éxito');
         } catch (err: any) {
-            console.error('Error al aprobar producto:', err);
-            alert(`Error de base de datos: ${err.message || 'No se pudo actualizar'}`);
+            console.error("Error approving store:", err);
+            alert('Error: ' + err.message);
         } finally {
             setActionLoading(null);
         }
@@ -172,31 +140,103 @@ export const AdminDashboard = () => {
 
     const handleRejectStore = async (storeId: string) => {
         setActionLoading(storeId);
-        await supabase.from('stores').update({ status: 'rejected' }).eq('id', storeId);
-        setStores(prev => prev.filter(s => s.id !== storeId));
-        setActionLoading(null);
+        try {
+            const { error } = await supabase
+                .from('stores')
+                .update({ status: 'suspended', is_active: false })
+                .eq('id', storeId);
+
+            if (error) throw error;
+
+            setStores(prev => prev.filter(s => s.id !== storeId));
+            alert('Tienda rechazada (suspendida)');
+        } catch (err: any) {
+            console.error("Error rejecting store:", err);
+            alert('Error: ' + err.message);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleApproveProduct = async (productId: string) => {
+        setActionLoading(productId);
+        try {
+            const { data: prodData, error: fetchErr } = await supabase
+                .from('products')
+                .select('name, store_id, stores(user_id, status, name)')
+                .eq('id', productId)
+                .single();
+
+            if (fetchErr) throw fetchErr;
+
+            const storeStatus = (prodData as any).stores?.status;
+            if (storeStatus !== 'active') {
+                if (!confirm(`La tienda "${(prodData as any).stores?.name}" aún está PENDIENTE. El producto se aprobará pero no será visible hasta que la tienda esté activa. ¿Continuar?`)) {
+                    setActionLoading(null);
+                    return;
+                }
+            }
+
+            const { error } = await supabase
+                .from('products')
+                .update({ status: 'active' })
+                .eq('id', productId);
+
+            if (error) throw error;
+
+            setProducts(prev => prev.filter(p => p.id !== productId));
+
+            if (prodData && (prodData as any).stores?.user_id) {
+                await supabase.from('notifications').insert({
+                    user_id: (prodData as any).stores.user_id,
+                    title: '✅ Producto Aprobado',
+                    message: `Tu producto "${prodData.name}" ha sido aprobado.`,
+                    type: 'success'
+                });
+            }
+            alert('Producto aprobado con éxito');
+        } catch (err: any) {
+            console.error("Error approving product:", err);
+            alert('Error: ' + err.message);
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const handleRejectProduct = async (productId: string) => {
         setActionLoading(productId);
-        await supabase.from('products').update({ status: 'rejected' }).eq('id', productId);
-        setProducts(prev => prev.filter(p => p.id !== productId));
-        setActionLoading(null);
+        try {
+            const { error } = await supabase
+                .from('products')
+                .update({ status: 'suspended' })
+                .eq('id', productId);
+
+            if (error) throw error;
+
+            setProducts(prev => prev.filter(p => p.id !== productId));
+            alert('Producto rechazado');
+        } catch (err: any) {
+            console.error("Error rejecting product:", err);
+            alert('Error: ' + err.message);
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const handleDeleteStore = async (storeId: string) => {
-        if (!confirm('⚠️ ¿Eliminar esta tienda permanentemente? Esto borrará también sus productos.')) return;
+        if (!confirm('⚠️ ¿Eliminar esta tienda permanentemente?')) return;
         setActionLoading(storeId);
-        // Primero eliminamos productos asociados
-        await supabase.from('products').delete().eq('store_id', storeId);
-        const { error } = await supabase.from('stores').delete().eq('id', storeId);
-        if (error) {
-            alert('Error al eliminar: ' + error.message);
-        } else {
+        try {
+            await supabase.from('products').delete().eq('store_id', storeId);
+            const { error } = await supabase.from('stores').delete().eq('id', storeId);
+            if (error) throw error;
             setAllStores(prev => prev.filter(s => s.id !== storeId));
             setStores(prev => prev.filter(s => s.id !== storeId));
+        } catch (err: any) {
+            alert('Error al eliminar: ' + err.message);
+        } finally {
+            setActionLoading(null);
         }
-        setActionLoading(null);
     };
 
     return (
@@ -242,7 +282,7 @@ export const AdminDashboard = () => {
                          : `Todas las tiendas (${allStores.length})`}
                     </h2>
                     <button
-                        onClick={activeTab === 'stores' ? fetchStores : activeTab === 'products' ? fetchProducts : fetchAllStores}
+                        onClick={fetchData}
                         className="text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-1"
                     >
                         <span className="material-symbols-outlined text-xs">refresh</span> Actualizar
@@ -251,7 +291,7 @@ export const AdminDashboard = () => {
 
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
-                        <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <div className="size-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                         <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Cargando...</p>
                     </div>
                 ) : (activeTab === 'stores' ? stores : activeTab === 'products' ? products : allStores).length === 0 ? (
@@ -288,7 +328,7 @@ export const AdminDashboard = () => {
                                                 disabled={!!actionLoading}
                                                 className="flex-1 h-12 rounded-2xl bg-emerald-500 font-black text-[10px] uppercase tracking-[0.2em] text-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50"
                                             >
-                                                Aprobar
+                                                {actionLoading === store.id ? '...' : 'Aprobar'}
                                             </button>
                                             <button 
                                                 onClick={() => handleRejectStore(store.id)}
@@ -317,7 +357,6 @@ export const AdminDashboard = () => {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="text-white font-black text-base tracking-tight truncate">{store.name || store.business_name || 'Sin nombre'}</h3>
-                                                <p className="text-white/40 text-[9px] uppercase font-black tracking-widest mt-0.5">{store.address || 'Sin dirección'}</p>
                                             </div>
                                             <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shrink-0 ${
                                                 store.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -332,9 +371,7 @@ export const AdminDashboard = () => {
                                             disabled={!!actionLoading}
                                             className="w-full h-11 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40"
                                         >
-                                            {actionLoading === store.id
-                                                ? <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                                                : <><span className="material-symbols-outlined text-sm">delete_forever</span> Eliminar Tienda</>}
+                                            <span className="material-symbols-outlined text-sm">delete_forever</span> Eliminar
                                         </button>
                                     </div>
                                 </motion.div>
@@ -367,7 +404,7 @@ export const AdminDashboard = () => {
                                                 disabled={!!actionLoading}
                                                 className="flex-1 h-12 rounded-2xl bg-emerald-500 font-black text-[10px] uppercase tracking-[0.2em] text-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50"
                                             >
-                                                Aprobar Producto
+                                                {actionLoading === product.id ? '...' : 'Aprobar Producto'}
                                             </button>
                                             <button 
                                                 onClick={() => handleRejectProduct(product.id)}
