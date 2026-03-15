@@ -83,7 +83,7 @@ export const AdminDashboard = () => {
             } else if (activeTab === 'products') {
                 const { data, error } = await supabase
                     .from('products')
-                    .select('*, stores(name, business_name, user_id, status)')
+                    .select('*, stores(name, user_id, status)')
                     .eq('status', 'pending')
                     .order('created_at', { ascending: false });
                 if (!error && data) setProducts(data as Product[]);

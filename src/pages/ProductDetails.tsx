@@ -34,11 +34,19 @@ export const ProductDetails = () => {
             try {
                 const { data, error } = await supabase
                     .from('products')
-                    .select('*')
+                    .select('*, stores(name)')
                     .eq('id', id)
                     .single();
                 if (error) throw error;
-                setProduct(data);
+                
+                // Map store name for easier access in UI
+                if (data) {
+                    const mappedData = {
+                        ...data,
+                        store_name: (data as any).stores?.name || 'Negocio Local'
+                    };
+                    setProduct(mappedData);
+                }
             } catch (err) {
                 console.error('Error cargando producto:', err);
             } finally {

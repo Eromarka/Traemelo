@@ -15,7 +15,7 @@ export const useProducts = () => {
                 // We also filter by store status in the client if the join is complex
                 const { data, error } = await supabase
                     .from('products')
-                    .select('*, stores(status, name, business_name)')
+                    .select('*, stores(status, name)')
                     .eq('status', 'active')
                     .order('created_at', { ascending: false });
 
